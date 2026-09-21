@@ -122,6 +122,7 @@ ffmpeg -y -i ../../bgm/results_score.wav -codec:a libmp3lame -b:a 96k -ar 22050 
 | 禁止 navigator.clipboard / execCommand | 小红书容器禁用；分享文案改「展示+全选，长按复制」 |
 | 月辉保持金色；Kimi 元素 = Geist Mono + 深空蓝场微调 | 用户定：品牌蓝不进游戏色板，致敬靠字体/色调/叙事 |
 | 任务面板只留 开始追逐/声音/返回封面；难度通关自动升档 | 用户判定面板杂乱、按钮语义不清：今日同场只留封面、榜单只留结算、休闲/标准键废除 |
+| 四档难度叙事名：追寻之旅/宇宙冒险/坠入虚空/月之暗面（key 仍 easy/normal/hard/blood），逐级通关解锁 | 用户定（2026-09-21）：起步档 = 追寻之旅（原休眠 easy 档启用）；老存档追溯解锁宇宙冒险不降级 |
 | blood 档用户可见名 = 「月之暗面」（key 不动） | 血月模式本来就是月亮攻击模式，用户指定正名；存档兼容故内部仍叫 blood |
 | 全局金色圆月（封面/局内/QTE 同一张 7244 抠图）；**例外：blood（月之暗面）局内+intro 用惨白坑洞月**（`assets/sprites/moon-dark.webp`，`tools/make_dark_moon.py` 从 06-gameplay-stipple 海报顶部那颗抠出） | 用户定：暗月只留给「月之暗面」关卡；用户指认要的就是 06 海报风那颗（旧 245px 棕斑 webp 不是，勿再用） |
 | 「今日同场」→「今日竞速」：指标从分数改通关用时 | 用户定：单机比分无感知；固定种子保证用时可比，对手是过去的自己。计时=play+discover+qte 的 `G.runT`，通关才计（`G.clearT`），PB 按难度存 `Store.data.pb`，今日最佳存 `daily.bestTime`；HUD 计时器仅竞速局显示 |

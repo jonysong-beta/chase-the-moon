@@ -1917,9 +1917,7 @@
   function applyNextStop() {
     const plan = G.nextStop || { diff: G.diff, daily: G.dailyMode };
     if (plan.diff && plan.diff !== G.diff) {
-      G.diff = DIFF[plan.diff] ? plan.diff : "normal";
-      if (G.diff === "hard" && !Store.data.ach.hard) G.diff = "normal";
-      if (G.diff === "blood" && !Store.data.ach.blood) G.diff = "normal";
+      G.diff = clampDiff(plan.diff);
       Store.data.diff = G.diff;
       Store.save();
     }
@@ -1987,7 +1985,7 @@
       const led = el.btnSound.querySelector(".led");
       if (led) led.classList.toggle("on", on);
     }
-    if (el.telEarth) el.telEarth.textContent = `CLASS ${DIFF[G.diff]?.label || "标准"}`;
+    if (el.telEarth) el.telEarth.textContent = `CLASS ${DIFF[G.diff]?.label || "追寻之旅"}`;
     if (el.telWell) el.telWell.textContent = `PULL ×${DIFF[G.diff]?.wellMul ?? 1}`;
     if (el.dailyTip) {
       el.dailyTip.textContent = "追寻月亮的光辉，它会带你找到方向";
@@ -3580,10 +3578,12 @@
       bodyCount: () => G.bodies.length,
       sector: () => ({ id: G.sector, name: SECTORS[G.sector]?.name, progress: G.progress }),
       unlockHard: () => {
+        Store.unlock("normal");
         Store.unlock("hard");
         return !!Store.data.ach.hard;
       },
       unlockBlood: () => {
+        Store.unlock("normal");
         Store.unlock("hard");
         Store.unlock("blood");
         return !!Store.data.ach.blood;
@@ -3591,11 +3591,9 @@
       diff: () => G.diff,
       setDiff: (d) => {
         if (!DIFF[d]) return G.diff;
-        if (d === "hard" && !Store.data.ach.hard) Store.unlock("hard");
-        if (d === "blood") {
-          Store.unlock("hard");
-          Store.unlock("blood");
-        }
+        if (d !== "easy") Store.unlock("normal");
+        if (d === "hard" || d === "blood") Store.unlock("hard");
+        if (d === "blood") Store.unlock("blood");
         G.diff = d;
         Store.data.diff = d;
         Store.save();
