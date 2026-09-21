@@ -1877,9 +1877,14 @@
 
   function refreshTitleUI() {
     if (el.btnSound) {
-      const label = AudioEngine.enabled ? "声音：开" : "声音：关";
+      const on = AudioEngine.enabled;
+      const label = on ? "声音：开" : "声音：关";
       el.btnSound.setAttribute("aria-label", label);
-      el.btnSound.textContent = label;
+      const span = el.btnSound.querySelector("span");
+      if (span) span.textContent = label;
+      else el.btnSound.textContent = label;
+      const led = el.btnSound.querySelector(".led");
+      if (led) led.classList.toggle("on", on);
     }
     if (el.telEarth) el.telEarth.textContent = `CLASS ${DIFF[G.diff]?.label || "标准"}`;
     if (el.telWell) el.telWell.textContent = `PULL ×${DIFF[G.diff]?.wellMul ?? 1}`;

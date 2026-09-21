@@ -790,10 +790,17 @@ body:not([data-type]) .cover-title {
   background-position: bottom left;
 }
 
+/* 机械键帽：硬底影 = 凸起的键，按下下沉 */
 .menu-panel .btn {
   border-color: #14121a;
   color: #14121a;
   background: transparent;
+  box-shadow: 0 3px 0 rgba(20, 18, 26, 0.85);
+}
+
+.menu-panel .btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(20, 18, 26, 0.85);
 }
 
 .menu-panel .btn.primary {
@@ -806,7 +813,77 @@ body:not([data-type]) .cover-title {
 .menu-panel .btn.ghost {
   border-color: rgba(20, 18, 26, 0.45);
   color: #4a4438;
+  box-shadow: 0 3px 0 rgba(20, 18, 26, 0.35);
 }
+
+.menu-panel .btn.ghost:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(20, 18, 26, 0.35);
+}
+
+/* 声音键 LED 指示灯：开=金亮，关=暗空心 */
+.menu-panel .btn .led {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid #4a4438;
+  margin-right: 7px;
+  vertical-align: 1px;
+  background: transparent;
+}
+
+.menu-panel .btn .led.on {
+  background: var(--gold-bright, #e8c878);
+  border-color: #8a6d2f;
+  box-shadow: 0 0 5px rgba(232, 200, 120, 0.8);
+}
+
+/* 操作区 / 读数区分隔细线 */
+.menu-divider {
+  width: 100%;
+  border-top: 1px solid rgba(20, 18, 26, 0.28);
+  margin-top: 2px;
+}
+
+/* 机身十字螺丝（奶油机身四角） */
+.menu-screw {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid rgba(20, 18, 26, 0.55);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.menu-screw::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 50%;
+  border-top: 1.5px solid rgba(20, 18, 26, 0.55);
+  transform: rotate(38deg);
+}
+
+.menu-screw.tl { left: 3.4%; top: 78%; }
+.menu-screw.tr { right: 3.4%; top: 78%; }
+.menu-screw.bl { left: 3.4%; bottom: 1.6%; }
+.menu-screw.br { right: 3.4%; bottom: 1.6%; }
+
+/* 刻度尺量程角标 */
+.menu-scale-end {
+  position: absolute;
+  bottom: 1.1%;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: rgba(20, 18, 26, 0.5);
+  pointer-events: none;
+}
+
+.menu-scale-end.left { left: 8%; }
+.menu-scale-end.right { right: 8%; }
 
 .menu-row {
   display: flex;

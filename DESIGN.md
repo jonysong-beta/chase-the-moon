@@ -43,7 +43,7 @@
 ### 3-3. 封面 / 面板 DOM 装饰
 
 - 封面：`.cover-keyline` 细金内框（inset 1%，四角刻度断口；**图层在月亮与徽章之下**——月亮转到轨道最高点会从框前飞过，不压线）；`.cover-ornament` 标题与按钮间 — ✦ — 饰线（top 79.2%）；`.cover-ver` 收进内框（bottom 4.5%）；`.cover-badge` LUNA 徽章（left 5.5% top 2.6%）。
-- 面板：`.menu-ruler` SVG data-uri 刻度尺（pin 奶油带底）；`.menu-panel` top 77.5% bottom 4%（奶油机身区从图 y1410 ≈ 屏 76% 起），子元素 `flex-shrink:0`（否则刻度尺被 flex 压成 0 高）。状态胶囊已废（难度档由 `CLASS` 遥测标签承载，避免重复）。仪场遥测（`01-mission-patch.png` 参考，全部有逻辑出处）：`.menu-tel` 三块——`TARGET/LUNA + DIST 384400 KM`（真实地月距离）、`SOL III/EARTH + CLASS {难度}`、`GRAV WELL + PULL ×{DIFF.wellMul}`（真数据，`refreshTitleUI` 刷新）；已废：ANOMALY/VOID（与难度「虚空」撞词）、RT（语义含糊）、RNG 384.40（无意义装饰）。`.menu-reticle` 左十字准星 + `.menu-bracket` 右上角框（SVG data-uri 细金，收在屏幕框内）。定位用屏 %：舞台锁 9:16 + `object-fit:cover` 顶锚，底图 1044×1884 只被裁底部 28px，屏 y% ≈ 图 y/1856，各机型稳定。
+- 面板：`.menu-ruler` SVG data-uri 刻度尺（pin 奶油带底）；`.menu-panel` top 77.5% bottom 4%（奶油机身区从图 y1410 ≈ 屏 76% 起），子元素 `flex-shrink:0`（否则刻度尺被 flex 压成 0 高）。状态胶囊已废（难度档由 `CLASS` 遥测标签承载，避免重复）。操作面板语言（2026-09-21 用户定方向）：按钮 = 机械键帽（3px 硬底影 + 按下下沉 2px）；声音键带 `.led` 指示灯（开=金亮，`refreshTitleUI` 切 class）；`.menu-screw` 机身十字螺丝四颗（奶油区四角）；`.menu-divider` 分隔操作区/读数区；`.menu-scale-end` 量程角标（SOL III / LUNA）。仪场遥测（`01-mission-patch.png` 参考，全部有逻辑出处）：`.menu-tel` 三块——`TARGET/LUNA + DIST 384400 KM`（真实地月距离）、`SOL III/EARTH + CLASS {难度}`、`GRAV WELL + PULL ×{DIFF.wellMul}`（真数据，`refreshTitleUI` 刷新）；已废：ANOMALY/VOID（与难度「虚空」撞词）、RT（语义含糊）、RNG 384.40（无意义装饰）。`.menu-reticle` 左十字准星 + `.menu-bracket` 右上角框（SVG data-uri 细金，收在屏幕框内）。定位用屏 %：舞台锁 9:16 + `object-fit:cover` 顶锚，底图 1044×1884 只被裁底部 28px，屏 y% ≈ 图 y/1856，各机型稳定。
 - **不要做奶油纸边框**：纸边是"海报印在纸上"的隐喻，手机屏幕满版沉浸才忠于海报本意；且局内无法跟入会撕裂（用户定，勿回退）。
 
 ### 3a. Color
