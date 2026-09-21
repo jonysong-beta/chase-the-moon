@@ -836,22 +836,79 @@ body:not([data-type]) .cover-title {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cg stroke='%23D4A84B' stroke-width='1' fill='none'%3E%3Cpath d='M1 12V1h11M22 1h11v11M33 22v11H22M12 33H1V22'/%3E%3C/g%3E%3Ccircle cx='17' cy='17' r='1.6' fill='%23D4A84B'/%3E%3C/svg%3E");
 }
 
-/* —— 任务面板：奶油带上的 DOM 控制区（奶油边界在图 y1410 ≈ 屏 76%）—— */
+/* —— 任务面板：奶油机身上的 DOM 控制区（屏幕框底边在图 y1330 ≈ 屏 71.7%）—— */
 .menu-panel {
   position: absolute;
   left: 8%;
   right: 8%;
-  top: 77.5%;
-  bottom: 4%;
+  top: 72.6%;
+  bottom: 2.4%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   pointer-events: auto;
   text-align: center;
 }
 
 .menu-panel > * { flex-shrink: 0; }
+
+/* 档位刻度盘：选择开关条，选中反色 + 金点，未解锁置灰带锁 */
+.menu-diff {
+  width: 100%;
+  display: flex;
+  border: 1.5px solid #14121a;
+}
+
+.menu-diff button {
+  flex: 1;
+  font-family: var(--font);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 8px 0 7px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid rgba(20, 18, 26, 0.35);
+  color: #14121a;
+  cursor: pointer;
+  position: relative;
+}
+
+.menu-diff button:first-child { border-left: none; }
+
+.menu-diff button.sel {
+  background: #14121a;
+  color: var(--cream);
+}
+
+.menu-diff button.sel::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--gold-bright, #e8c878);
+  box-shadow: 0 0 4px rgba(232, 200, 120, 0.8);
+}
+
+.menu-diff button.locked {
+  color: rgba(20, 18, 26, 0.32);
+}
+
+.menu-diff button.locked::after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  width: 8px;
+  height: 10px;
+  margin-top: -5px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='10'%3E%3Cpath d='M2 4.5V3.5a2 2 0 014 0v1h1V9H1V4.5h1zm1.5 0h1V3.5a.5.5 0 00-1 0v1z' fill='%2314121a' opacity='.55'/%3E%3C/svg%3E") no-repeat center / contain;
+}
 
 /* 仪表刻度尺：填补奶油带底部空间（任务图纸语言） */
 .menu-ruler {
@@ -940,19 +997,21 @@ body:not([data-type]) .cover-title {
   transform: rotate(38deg);
 }
 
-.menu-screw.tl { left: 3.4%; top: 78%; }
-.menu-screw.tr { right: 3.4%; top: 78%; }
+.menu-screw.tl { left: 3.4%; top: 73.4%; }
+.menu-screw.tr { right: 3.4%; top: 73.4%; }
 .menu-screw.bl { left: 3.4%; bottom: 1.6%; }
 .menu-screw.br { right: 3.4%; bottom: 1.6%; }
 
-/* 刻度尺量程角标 */
+/* 刻度尺量程角标：奶油小垫片压尺端 */
 .menu-scale-end {
   position: absolute;
-  bottom: 1.1%;
+  bottom: 1.7%;
   font-family: var(--mono);
   font-size: 8px;
   letter-spacing: 0.2em;
   color: rgba(20, 18, 26, 0.5);
+  background: #f0e6d3;
+  padding: 0 5px;
   pointer-events: none;
 }
 
@@ -961,11 +1020,16 @@ body:not([data-type]) .cover-title {
 
 .menu-row {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
 }
 
-.menu-row .btn { flex: 1; }
+.menu-row .btn {
+  flex: 1;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 8px 4px;
+}
 
 .menu-tip {
   font-size: 10px;

@@ -304,7 +304,12 @@
     btnJet: document.getElementById("btn-jet"),
     telEarth: document.getElementById("tel-earth"),
     telWell: document.getElementById("tel-well"),
+    diffDial: document.getElementById("menu-diff"),
+    btnRace: document.getElementById("btn-race"),
   };
+
+  // 面板竞速开关（会话内状态，不入存档）
+  let menuDaily = false;
 
   function ensureSegs(root, n = 10) {
     if (!root || root.childElementCount === n) return;
@@ -328,7 +333,7 @@
 
   function ensureMenuArt() {
     if (menuArt && !menuArt.getAttribute("src")) {
-      menuArt.src = "assets/ui/menu.webp?v=8";
+      menuArt.src = "assets/ui/menu.webp?v=9";
     }
   }
 
@@ -1977,16 +1982,29 @@
   function refreshTitleUI() {
     if (el.btnSound) {
       const on = AudioEngine.enabled;
-      const label = on ? "声音：开" : "声音：关";
-      el.btnSound.setAttribute("aria-label", label);
+      el.btnSound.setAttribute("aria-label", on ? "声音：开" : "声音：关");
       const span = el.btnSound.querySelector("span");
-      if (span) span.textContent = label;
-      else el.btnSound.textContent = label;
+      if (span) span.textContent = "声音";
+      else el.btnSound.textContent = "声音";
       const led = el.btnSound.querySelector(".led");
       if (led) led.classList.toggle("on", on);
     }
     if (el.telEarth) el.telEarth.textContent = `CLASS ${DIFF[G.diff]?.label || "追寻之旅"}`;
     if (el.telWell) el.telWell.textContent = `PULL ×${DIFF[G.diff]?.wellMul ?? 1}`;
+    if (el.diffDial) {
+      const maxIdx = LADDER.indexOf(maxUnlockedDiff());
+      el.diffDial.querySelectorAll("button").forEach((b) => {
+        const i = LADDER.indexOf(b.dataset.diff);
+        b.classList.toggle("locked", i > maxIdx);
+        b.classList.toggle("sel", b.dataset.diff === G.diff);
+      });
+    }
+    if (el.btnRace) {
+      const led = el.btnRace.querySelector(".led");
+      if (led) led.classList.toggle("on", menuDaily);
+      el.btnRace.setAttribute("aria-pressed", menuDaily ? "true" : "false");
+    }
+    if (el.btnStart) el.btnStart.textContent = menuDaily ? "开始竞速" : "开始追逐";
     if (el.dailyTip) {
       el.dailyTip.textContent = "追寻月亮的光辉，它会带你找到方向";
     }
@@ -3397,7 +3415,31 @@
     el.btnStart.addEventListener("click", (e) => {
       e.stopPropagation();
       click();
-      beginRun(false);
+      beginRun(menuDaily);
+    });
+
+    el.diffDial?.querySelectorAll("button").forEach((b) => {
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const d = b.dataset.diff;
+        const i = LADDER.indexOf(d);
+        if (i > LADDER.indexOf(maxUnlockedDiff())) {
+          showToast(`通关「${DIFF[LADDER[i - 1]]?.label || ""}」后解锁`);
+          return;
+        }
+        click();
+        G.diff = d;
+        Store.data.diff = d;
+        Store.save();
+        refreshTitleUI();
+      });
+    });
+
+    el.btnRace?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      click();
+      menuDaily = !menuDaily;
+      refreshTitleUI();
     });
 
     el.btnBoard2.addEventListener("click", (e) => {

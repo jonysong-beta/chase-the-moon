@@ -98,9 +98,17 @@
             <span class="v" id="tel-well">PULL ×1.0</span>
           </div>
           <div class="menu-panel">
+            <!-- 档位刻度盘：逐级解锁，未解锁置灰带锁 -->
+            <div class="menu-diff" id="menu-diff" role="group" aria-label="难度选择">
+              <button type="button" data-diff="easy">追寻之旅</button>
+              <button type="button" data-diff="normal">宇宙冒险</button>
+              <button type="button" data-diff="hard">坠入虚空</button>
+              <button type="button" data-diff="blood">月之暗面</button>
+            </div>
             <button type="button" class="btn primary wide" id="btn-start">开始追逐</button>
             <div class="menu-row">
-              <button type="button" class="btn ghost" id="btn-sound"><i class="led" aria-hidden="true"></i><span>声音：开</span></button>
+              <button type="button" class="btn ghost" id="btn-sound"><i class="led" aria-hidden="true"></i><span>声音</span></button>
+              <button type="button" class="btn ghost" id="btn-race"><i class="led" aria-hidden="true"></i><span>今日竞速</span></button>
               <button type="button" class="btn ghost" id="btn-back-cover">返回封面</button>
             </div>
             <div class="menu-divider" aria-hidden="true"></div>
