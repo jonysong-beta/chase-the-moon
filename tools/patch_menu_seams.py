@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""抹掉 menu.webp 仪场里的烘焙断口：
+"""抹掉 menu.webp 仪场里的烘焙断口 + 下移奶油带：
 - y≈1041-43 / y≈1205-10 两条横向金线（原方图内框底线 + 延展接缝）
 - x=0 / x=1043 两条 1px 竖直框线（仅仪场 navy 区，奶油带无此线）
 - 右缘水印残迹（x≈920-1043, y≈970-1080，原 AI 水印未除净）
+- 奶油边界 y1265 → y1410（屏 68% → 76%，仪场加长；inset 细线同步下移）
 
 重绘配方同 patch_cover_grain.py：底色取邻近干净星空逐通道中位数，
 颗粒 = 细噪（std 实测于干净区）+ 低频斑驳，星星小/中/亮/四芒四档、暖金色。
-奶油带与其 y≈1280 inset 细线不动。源文件用 tools/menu-prseam.webp（打补丁前备份）。
+源文件用 tools/menu-prseam.webp（打补丁前备份）。
 """
 import numpy as np
 from PIL import Image
@@ -80,5 +81,14 @@ repaint(0, NAVY_END, 1039, W, med(200, 1000, 1010, 1036))
 # ── 水印残迹（整区重绘，覆盖横线 A 右端也已处理）──
 repaint(968, 1082, 918, W, med(968, 1082, 780, 905))
 
+# ── 奶油带下移：y1265 → y1410（仪场加长，inset 细线同步）──
+NEW_BOUND = 1410
+navy_base = med(1216, 1260, 100, 900)  # 补丁后该区已是干净星空，取边界下缘附近底色
+repaint(NAVY_END - 4, NEW_BOUND, 0, W, navy_base)  # 原奶油边界实际起于 ~1262（webp 柔化），多吞几行
+CREAM = np.array([240.0, 230.0, 210.0])  # 原奶油带中位色（原图几乎无颗粒，保持平涂）
+im[NEW_BOUND:H] = CREAM
+HL = np.array([27.0, 23.0, 20.0])  # inset 细线原色
+im[NEW_BOUND + 15 : NEW_BOUND + 17, 62:982] = HL
+
 Image.fromarray(np.clip(im, 0, 255).astype(np.uint8), "RGB").save(OUT, quality=90)
-print(f"seams patched (grain std={FINE_STD:.2f}) -> {OUT}")
+print(f"seams patched (grain std={FINE_STD:.2f}), cream moved 1265 -> {NEW_BOUND} -> {OUT}")

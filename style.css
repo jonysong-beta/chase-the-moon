@@ -762,12 +762,12 @@ body:not([data-type]) .cover-title {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cg stroke='%23D4A84B' stroke-width='1' fill='none'%3E%3Cpath d='M1 12V1h11M22 1h11v11M33 22v11H22M12 33H1V22'/%3E%3C/g%3E%3Ccircle cx='17' cy='17' r='1.6' fill='%23D4A84B'/%3E%3C/svg%3E");
 }
 
-/* —— 任务面板：奶油带上的 DOM 控制区 —— */
+/* —— 任务面板：奶油带上的 DOM 控制区（奶油边界在图 y1410 ≈ 屏 76%）—— */
 .menu-panel {
   position: absolute;
   left: 8%;
   right: 8%;
-  top: 68.5%;
+  top: 77.5%;
   bottom: 4%;
   display: flex;
   flex-direction: column;
@@ -778,17 +778,6 @@ body:not([data-type]) .cover-title {
 }
 
 .menu-panel > * { flex-shrink: 0; }
-
-.menu-status {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  color: #4a4438;
-  border: 1px solid rgba(20, 18, 26, 0.4);
-  border-radius: 999px;
-  padding: 3px 12px 3px calc(12px + 0.18em);
-  margin: 0;
-}
 
 /* 仪表刻度尺：填补奶油带底部空间（任务图纸语言） */
 .menu-ruler {
