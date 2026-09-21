@@ -28,8 +28,8 @@ echo "── 禁用 API 扫描（应为空）："
 grep -rnE "eval\(|new Function|XMLHttpRequest|navigator\.clipboard|execCommand|window\.open|WebAssembly|Worker\(|onclick=|<iframe|<form" "$OUT" || echo "  clean"
 grep -rn "fetch(" "$OUT" || echo "  no fetch"
 
-cd dist
-zip -qr chase-the-moon.zip chase-the-moon -x "*.DS_Store"
-cd ..
+cd dist/chase-the-moon
+zip -qr ../chase-the-moon.zip . -x "*.DS_Store"
+cd ../..
 du -sh "$OUT" dist/chase-the-moon.zip
 echo "done → dist/chase-the-moon.zip"

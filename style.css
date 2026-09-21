@@ -16,8 +16,8 @@
   --ink: #0A1420;
   --font: "Courier New", Courier, ui-monospace, monospace;
   --mono: "Geist Mono", "Courier New", Courier, ui-monospace, monospace;
-  --safe-b: env(safe-area-inset-bottom, 0px);
-  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: 0px;
+  --safe-t: 0px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,6 +45,10 @@ html, body {
 
 #stage {
   position: relative;
+  width: 100vw;
+  max-width: calc(100vh * 270 / 480);
+  height: calc(100vw * 480 / 270);
+  max-height: 100vh;
   width: min(100vw, calc(100dvh * 270 / 480));
   height: min(100dvh, calc(100vw * 480 / 270));
   max-height: 100dvh;
@@ -59,6 +63,10 @@ html, body {
   image-rendering: auto;
   background: transparent;
   position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   z-index: 1;
 }
@@ -66,6 +74,10 @@ html, body {
 /* 全分辨率海报（封面/面板）— 浏览器直接缩放，不进低清 canvas */
 .poster-art {
   position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -84,6 +96,10 @@ html, body {
 
 .grain {
   position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   pointer-events: none;
   z-index: 3;
@@ -98,6 +114,7 @@ html, body {
 #hud {
   position: absolute;
   top: calc(16px + var(--safe-t));
+  top: calc(16px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
   left: 18px;
   right: 18px;
   z-index: 5;
@@ -107,15 +124,14 @@ html, body {
 .hud-row {
   display: flex;
   align-items: center;
-  gap: 8px;
   padding: 8px 10px;
   background: transparent;
   border: 0;
 }
 
-.hud-block { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.hud-block { display: flex; align-items: center; min-width: 0; }
 .hud-block.grow { flex: 0.7; justify-content: center; }
-.hud-block.center-label { flex-direction: column; gap: 1px; }
+.hud-block.center-label { flex-direction: column; }
 .hud-block.center-label .hud-phase { white-space: nowrap; }
 .hud-block:first-child { flex: 1.2; }
 .hud-block:last-child { flex: 1.2; }
@@ -187,7 +203,6 @@ html, body {
 
 .seg {
   display: flex;
-  gap: 3px;
   flex: 1;
   height: 16px;
 }
@@ -226,12 +241,14 @@ html, body {
   align-items: flex-end;
   justify-content: flex-start;
   padding: 12px 8px calc(18px + var(--safe-b));
+  padding: 12px 8px calc(18px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
 }
 
 .stick-base {
   position: absolute;
   left: 10px;
   bottom: calc(18px + var(--safe-b));
+  bottom: calc(18px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   width: 88px;
   height: 88px;
   border-radius: 50%;
@@ -249,6 +266,10 @@ html, body {
 .stick-base::before {
   content: "";
   position: absolute;
+  top: -11px;
+  right: -11px;
+  bottom: -11px;
+  left: -11px;
   inset: -11px;
   border-radius: 50%;
   background: repeating-conic-gradient(
@@ -277,6 +298,7 @@ html, body {
   position: absolute;
   right: 14px;
   bottom: calc(28px + var(--safe-b));
+  bottom: calc(28px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   width: 72px;
   height: 72px;
   border-radius: 50%;
@@ -297,6 +319,10 @@ html, body {
 .btn-jet::before {
   content: "";
   position: absolute;
+  top: -10px;
+  right: -10px;
+  bottom: -10px;
+  left: -10px;
   inset: -10px;
   border-radius: 50%;
   background: repeating-conic-gradient(
@@ -323,6 +349,10 @@ html, body {
 /* —— Overlay screens —— */
 .overlay {
   position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   z-index: 10;
   display: flex;
@@ -371,6 +401,10 @@ html, body {
 
 .cover-scene {
   position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   z-index: 2;
   overflow: hidden;
@@ -381,6 +415,10 @@ html, body {
 
 .cover-bg {
   position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -440,6 +478,10 @@ html, body {
 
 .cover-type {
   position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   pointer-events: none;
   z-index: 2;
@@ -450,6 +492,7 @@ html, body {
   left: 5.5%;
   top: 2.6%;
   width: 12.5%;
+  height: 7.0313%;
   aspect-ratio: 1;
   border: 2px solid var(--gold);
   border-radius: 50%;
@@ -458,7 +501,6 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6%;
   background: #0B1520;
 }
 
@@ -483,6 +525,7 @@ html, body {
 }
 
 .badge-word {
+  font-size: 7px;
   font-size: clamp(6px, 1.3vw, 9px);
   letter-spacing: 0.18em;
   color: var(--gold-bright);
@@ -501,6 +544,10 @@ html, body {
 /* 细金内框（证书 keyline）：四角小刻度断口 */
 .cover-keyline {
   position: absolute;
+  top: 1%;
+  right: 1%;
+  bottom: 1%;
+  left: 1%;
   inset: 1%;
   border: 1px solid rgba(212, 168, 75, 0.38);
   pointer-events: none;
@@ -526,7 +573,6 @@ html, body {
   top: 79.2%;
   display: flex;
   align-items: center;
-  gap: 10px;
   pointer-events: none;
 }
 
@@ -551,6 +597,7 @@ html, body {
 .cover-title {
   font-family: "Noto Serif SC", "Songti SC", "STSong", "Source Han Serif SC", serif;
   font-weight: 700;
+  font-size: 34px;
   font-size: clamp(28px, 9.2vw, 48px);
   letter-spacing: 0.2em;
   color: var(--cream);
@@ -567,11 +614,16 @@ html, body {
 .cover-sub {
   margin: 14px 0 0;
   color: var(--gold-bright);
+  font-size: 12px;
   font-size: clamp(11px, 2.8vw, 15px);
 }
 
 .cover-actions {
   position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   pointer-events: none;
 }
@@ -584,6 +636,7 @@ html, body {
   height: 5.42%;
   min-height: 40px;
   font-family: inherit;
+  font-size: 13px;
   font-size: clamp(13px, 3.3vw, 15px);
   letter-spacing: 0.18em;
   padding: 0;
@@ -611,6 +664,11 @@ html, body {
   filter: brightness(1.2);
 }
 
+.cover-btn:focus {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
 .cover-btn:focus-visible {
   outline: 2px solid var(--gold-bright);
   outline-offset: 2px;
@@ -622,11 +680,11 @@ html, body {
   bottom: 4.5%;
   margin: 0;
   font-family: var(--mono);
+  font-size: 11px;
   font-size: clamp(10px, 2.5vw, 12px);
   letter-spacing: 0.18em;
   display: flex;
   align-items: center;
-  gap: 0.55em;
   line-height: 1;
 }
 
@@ -655,6 +713,7 @@ html, body {
   right: 5.5%;
   bottom: 2.8%;
   width: 4.8%;
+  height: 2.7%;
   aspect-ratio: 1;
   border-radius: 50%;
   background: var(--gold-bright);
@@ -770,6 +829,10 @@ body:not([data-type]) .cover-title {
 /* —— Menu 任务面板：插画即 UI —— */
 .menu-screen {
   position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
   inset: 0 !important;
   max-width: none !important;
   width: 100% !important;
@@ -846,7 +909,6 @@ body:not([data-type]) .cover-title {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
   pointer-events: auto;
   text-align: center;
 }
@@ -911,7 +973,7 @@ body:not([data-type]) .cover-title {
 }
 
 /* 仪表刻度尺：填补奶油带底部空间（任务图纸语言） */
-.menu-ruler {
+.menu-panel > .menu-ruler {
   margin-top: auto;
   width: 100%;
   height: 12px;
@@ -1020,7 +1082,6 @@ body:not([data-type]) .cover-title {
 
 .menu-row {
   display: flex;
-  gap: 8px;
   width: 100%;
 }
 
@@ -1078,7 +1139,6 @@ body:not([data-type]) .cover-title {
 .btn-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   margin: 14px 0 6px;
 }
 
@@ -1116,6 +1176,11 @@ body:not([data-type]) .cover-title {
 .btn.small {
   font-size: 11px;
   padding: 8px 12px;
+}
+
+.btn:focus {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
 }
 
 .btn:focus-visible {
@@ -1177,6 +1242,7 @@ body:not([data-type]) .cover-title {
   position: absolute;
   right: 14px;
   bottom: calc(28px + var(--safe-b));
+  bottom: calc(28px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   z-index: 8;
   width: 78px;
   height: 78px;
@@ -1225,7 +1291,6 @@ body:not([data-type]) .cover-title {
 .stats li {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
   padding: 8px 10px;
   font-family: var(--mono);
   font-size: 11px;
@@ -1244,7 +1309,6 @@ body:not([data-type]) .cover-title {
 /* Difficulty chips */
 .diff-row {
   display: flex;
-  gap: 8px;
   justify-content: center;
   margin: 4px 0 8px;
 }
@@ -1327,7 +1391,6 @@ body:not([data-type]) .cover-title {
 .board-list li {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
   padding: 8px 10px;
   font-size: 11px;
   color: var(--cream);
@@ -1359,3 +1422,18 @@ body:not([data-type]) .cover-title {
 @media (prefers-reduced-motion: reduce) {
   .meter i { transition: none; }
 }
+
+/* ── Chrome 61 基线：flex 间距用 margin（不用 gap）── */
+.hud-row > * + * { margin-left: 8px; }
+.hud-block > * + * { margin-left: 6px; }
+.hud-block.center-label > * + * { margin-top: 1px; }
+.seg > * + * { margin-left: 3px; }
+.cover-badge > * + * { margin-top: 3px; }
+.cover-ornament > * + * { margin-left: 10px; }
+.cover-ver > * + * { margin-left: 0.55em; }
+.menu-panel > * + * { margin-top: 6px; }
+.menu-row > * + * { margin-left: 8px; }
+.btn-col > * + * { margin-top: 10px; }
+.stats li > * + * { margin-left: 12px; }
+.diff-row > * + * { margin-left: 8px; }
+.board-list li > * + * { margin-left: 8px; }

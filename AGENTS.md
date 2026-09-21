@@ -148,6 +148,7 @@ ffmpeg -y -i ../../bgm/results_score.wav -codec:a libmp3lame -b:a 96k -ar 22050 
 - 禁：内联 `<script>`、`onclick=` 行内事件、fetch/XHR/一切网络请求、eval/new Function、WASM、Worker、iframe、form 提交、window.open/prompt、clipboard/execCommand、外部 CDN/图片/字体
 - 可用：Canvas 2D、WebGL（受限）、包内资源 src 引用、内联样式、localStorage/IndexedDB、文本选择
 - 打包：`tools/pack_xhs.sh` → `dist/chase-the-moon.zip`（自带白名单/禁用 API 自检）
+- **官方构建规范**（`.skill/minitool-zip-builder/`，v1.6.0）：zip 根目录必须直接是 `index.html`（`cd dist/chase-the-moon && zip -qr ../chase-the-moon.zip .`，不可带目录层）；JS ≤ ES2017（禁 `?.`/`??`/对象 spread/可选 catch 绑定等，Chrome 61 基线）；CSS 走「Chrome 61 基线 + 增强层覆盖」（禁 inset/gap/clamp/min()/dvh/env()/aspect-ratio 单实现——本项目全部用「基线声明在前、增强声明在后」或 margin 基线）；交付前跑 `python3 .skill/minitool-zip-builder/minitool-zip-builder/scripts/audit_artifact.py ./dist/chase-the-moon` 和 zip 各一次
 
 ## 不做
 

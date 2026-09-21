@@ -1398,7 +1398,7 @@
 
   function setState(s) {
     G.state = s;
-    Input.releaseAll?.(); // 切屏瞬间若手指还按着，隐藏控件可能吞掉 pointerup，强制清场防摇杆卡死
+    if (Input.releaseAll) Input.releaseAll(); // 切屏瞬间若手指还按着，隐藏控件可能吞掉 pointerup，强制清场防摇杆卡死
     const stage = document.getElementById("stage");
     if (stage) {
       stage.classList.toggle("poster-mode", s === "cover");
@@ -1955,7 +1955,7 @@
       Store.save();
     }
     G.dailyMode = !!plan.daily;
-    if (plan.upgrade) showToast(`难度 · ${DIFF[G.diff]?.label || G.diff}`);
+    if (plan.upgrade) showToast(`难度 · ${(DIFF[G.diff] && DIFF[G.diff].label) || G.diff}`);
     AudioEngine.resume();
     resetRun();
     setState("play");
@@ -2002,7 +2002,7 @@
 
     const rankTxt = G.rank > 0 ? `本机榜 #${G.rank} · 共 ${Store.data.board.length} 条` : "";
     const nextTxt = G.nextStop.upgrade
-      ? `下一站 · ${DIFF[G.nextStop.diff]?.label || ""}`
+      ? `下一站 · ${(DIFF[G.nextStop.diff] && DIFF[G.nextStop.diff].label) || ""}`
       : "";
     el.rankLine.textContent = [rankTxt, nextTxt].filter(Boolean).join("　");
   }
@@ -2018,8 +2018,8 @@
       el.btnSound.querySelector("span").textContent = on ? "声音：开" : "声音：关";
       el.btnSound.querySelector(".led").classList.toggle("on", on);
     }
-    if (el.telEarth) el.telEarth.textContent = `CLASS ${DIFF[G.diff]?.label || "追寻之旅"}`;
-    if (el.telWell) el.telWell.textContent = `PULL ×${DIFF[G.diff]?.wellMul ?? 1}`;
+    if (el.telEarth) el.telEarth.textContent = `CLASS ${(DIFF[G.diff] && DIFF[G.diff].label) || "追寻之旅"}`;
+    if (el.telWell) el.telWell.textContent = `PULL ×${(DIFF[G.diff] ? DIFF[G.diff].wellMul : 1)}`;
     if (el.diffDial) {
       const maxIdx = LADDER.indexOf(maxUnlockedDiff());
       el.diffDial.querySelectorAll("button").forEach((b) => {
@@ -2051,7 +2051,7 @@
           const timeTxt = e.time != null ? ` · ${fmtTime(e.time)}` : "";
           return `<li>
             <span class="r">#${i + 1}</span>
-            <span class="n" style="color:${end.color}">${end.title}${tag} · ${DIFF[e.diff]?.label || ""}${timeTxt}</span>
+            <span class="n" style="color:${end.color}">${end.title}${tag} · ${(DIFF[e.diff] && DIFF[e.diff].label) || ""}${timeTxt}</span>
             <span class="s">${e.score}</span>
           </li>`;
         })
@@ -2071,10 +2071,10 @@
     return [
       `【逐月计划】${end.title} · ${Math.round(G.score)}分`,
       G.clearT != null ? `用时 ${fmtTime(G.clearT)}${G.newPB ? " · 新纪录" : ""}` : "",
-      `质量${Math.round(G.earth?.mass || 0)} · 追近${Math.round(G.progress * 100)}%`,
+      `质量${Math.round((G.earth && G.earth.mass) || 0)} · 追近${Math.round(G.progress * 100)}%`,
       qtxt,
       G.rank ? `本机榜 #${G.rank}` : "",
-      G.dailyMode ? `今日竞速 ${todayKey()}` : `难度 ${DIFF[G.diff]?.label || ""}`,
+      G.dailyMode ? `今日竞速 ${todayKey()}` : `难度 ${(DIFF[G.diff] && DIFF[G.diff].label) || ""}`,
       "系统截屏这张卡，来比谁先追回月亮",
     ]
       .filter(Boolean)
@@ -2143,7 +2143,7 @@
       g.fillText(`用时 ${fmtTime(G.clearT)}${G.newPB ? " · 新纪录" : ""}`, w / 2, 258);
       g.fillStyle = "#8B9BB8";
     }
-    g.fillText(`质量 ${Math.round(G.earth?.mass || 0)} · 追近 ${Math.round(G.progress * 100)}%`, w / 2, 292);
+    g.fillText(`质量 ${Math.round((G.earth && G.earth.mass) || 0)} · 追近 ${Math.round(G.progress * 100)}%`, w / 2, 292);
     g.fillText(
       q ? `QTE ${q.perfect}/${q.good}/${q.miss} ×${q.bestCombo}` : "未进入捕获",
       w / 2,
@@ -2168,7 +2168,7 @@
     g.fillStyle = "#8B9BB8";
     g.font = "20px 'Geist Mono', monospace";
     const meta = [
-      `${DIFF[G.diff]?.label || ""}${G.dailyMode ? " · 今日竞速" : ""}`,
+      `${(DIFF[G.diff] && DIFF[G.diff].label) || ""}${G.dailyMode ? " · 今日竞速" : ""}`,
       todayKey(),
       G.rank ? `本机榜 #${G.rank}` : "",
     ].filter(Boolean);
@@ -3336,7 +3336,7 @@
           ctx.fillRect(-s / 2, -s / 2, s, s);
         } else {
           ctx.scale(p.scale, p.scale);
-          const flat = { ...b, x: 0, y: 0 };
+          const flat = Object.assign({}, b, { x: 0, y: 0 });
           if (b.type === "well") drawWell(flat);
           else drawRock(flat);
         }
@@ -3423,14 +3423,14 @@
   function wireUI() {
     const click = () => AudioEngine.sfx("click");
 
-    el.btnCoverStart?.addEventListener("click", (e) => {
+    if (el.btnCoverStart) el.btnCoverStart.addEventListener("click", (e) => {
       e.stopPropagation();
       click();
       AudioEngine.resume();
       setState("title");
     });
 
-    el.btnBackCover?.addEventListener("click", (e) => {
+    if (el.btnBackCover) el.btnBackCover.addEventListener("click", (e) => {
       e.stopPropagation();
       click();
       setState("cover");
@@ -3442,13 +3442,13 @@
       beginRun(menuDaily);
     });
 
-    el.diffDial?.querySelectorAll("button").forEach((b) => {
+    if (el.diffDial) el.diffDial.querySelectorAll("button").forEach((b) => {
       b.addEventListener("click", (e) => {
         e.stopPropagation();
         const d = b.dataset.diff;
         const i = LADDER.indexOf(d);
         if (i > LADDER.indexOf(maxUnlockedDiff())) {
-          showToast(`通关「${DIFF[LADDER[i - 1]]?.label || ""}」后解锁`);
+          showToast(`通关「${(DIFF[LADDER[i - 1]] && DIFF[LADDER[i - 1]].label) || ""}」后解锁`);
           return;
         }
         click();
@@ -3459,7 +3459,7 @@
       });
     });
 
-    el.btnRace?.addEventListener("click", (e) => {
+    if (el.btnRace) el.btnRace.addEventListener("click", (e) => {
       e.stopPropagation();
       click();
       menuDaily = !menuDaily;
@@ -3557,11 +3557,12 @@
     document.body.setAttribute("data-type", typePick);
 
     G.reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window
-      .matchMedia("(prefers-reduced-motion: reduce)")
-      .addEventListener?.("change", (e) => {
+    const mqReduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mqReduce.addEventListener) {
+      mqReduce.addEventListener("change", (e) => {
         G.reduceMotion = e.matches;
       });
+    }
 
     fitCanvas();
     window.addEventListener("resize", fitCanvas);
@@ -3644,7 +3645,7 @@
         return { lx, ly, z: 1 - t };
       },
       bodyCount: () => G.bodies.length,
-      sector: () => ({ id: G.sector, name: SECTORS[G.sector]?.name, progress: G.progress }),
+      sector: () => ({ id: G.sector, name: (SECTORS[G.sector] && SECTORS[G.sector].name), progress: G.progress }),
       unlockHard: () => {
         Store.unlock("normal");
         Store.unlock("hard");

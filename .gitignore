@@ -9,3 +9,4 @@ dist/
 # 音乐生成中间产物（可由 music/src 脚本再生成）
 music/raw/
 music/pack/
+.skill/
