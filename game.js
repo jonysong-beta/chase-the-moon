@@ -1274,15 +1274,6 @@
     ctx.restore();
   }
 
-  // thin cream inner frame — poster keyline carried into the playfield
-  function drawKeylineFrame() {
-    ctx.save();
-    ctx.strokeStyle = "rgba(240,230,211,0.4)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(5.5, 5.5, W - 11, H - 11);
-    ctx.restore();
-  }
-
   function dashedLine(x1, y1, x2, y2, color, dash = 4, gap = 4, w = 1) {
     ctx.save();
     ctx.strokeStyle = color;
@@ -1912,10 +1903,10 @@
       };
     }
     if (G.diff === "easy") {
-      return { label: "挑战标准", diff: "normal", daily: false, upgrade: true };
+      return { label: "挑战宇宙冒险", diff: "normal", daily: false, upgrade: true };
     }
     if (G.diff === "normal") {
-      return { label: "挑战虚空", diff: "hard", daily: false, upgrade: true };
+      return { label: "挑战坠入虚空", diff: "hard", daily: false, upgrade: true };
     }
     if (G.diff === "hard") {
       return { label: "挑战月之暗面", diff: "blood", daily: false, upgrade: true };
@@ -3336,8 +3327,6 @@
     ctx.fillStyle = "#000";
     for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 1);
     ctx.globalAlpha = 1;
-
-    if (inRun) drawKeylineFrame();
 
     ctx.restore();
   }
