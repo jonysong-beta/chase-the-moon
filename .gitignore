@@ -1,0 +1,11 @@
+# 版本控制排除项（2026-09-21 起入库）
+.DS_Store
+__pycache__/
+
+# 构建产物
+dist/
+.playwright-cli/
+
+# 音乐生成中间产物（可由 music/src 脚本再生成）
+music/raw/
+music/pack/

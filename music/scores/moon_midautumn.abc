@@ -1,0 +1,40 @@
+X:1
+T:月上 Mid-Autumn Moonrise (original)
+C:Original — pentatonic, not a traditional transcription
+M:4/4
+L:1/8
+Q:1/4=96
+K:G
+V:LEAD clef=treble name="Dizi-like Lead"
+%%MIDI program 80
+V:BASS clef=bass name="Bass"
+%%MIDI program 81
+V:ARP clef=treble name="Guzheng ARP"
+%%MIDI program 80
+%
+% A
+[V:LEAD] B2 A B G | A4 z4 | G2 E D E | E4 z4 |
+[V:BASS] G,4 G,4 | G,4 G,4 | E,4 E,4 | E,4 E,4 |
+[V:ARP]  G,B, dB, G,B, dB, | G,B, dB, G,B, dB, | E,G, B,G, E,G, B,G, | E,G, B,G, E,G, B,G, |
+%
+[V:LEAD] G A B2 | d2 B2 | A4 | G4 |
+[V:BASS] D,4 D,4 | D,4 D,4 | G,4 G,4 | G,4 G,4 |
+[V:ARP]  D,A, dA, D,A, dA, | D,A, dA, D,A, dA, | G,B, dB, G,B, dB, | G,B, dB, G,B, dB, |
+%
+% B
+[V:LEAD] d2 e d | B2 A2 | B2 d2 | e4 |
+[V:BASS] G,4 G,4 | D,4 D,4 | E,4 E,4 | G,4 G,4 |
+[V:ARP]  G,d gd G,d gd | D,A, dA, D,A, dA, | E,B, eB, E,B, eB, | G,d gd G,d gd |
+%
+[V:LEAD] d B A G | A2 B2 | A2 G2 | E4 |
+[V:BASS] E,4 E,4 | D,4 D,4 | D,4 D,4 | E,4 E,4 |
+[V:ARP]  E,B, eB, E,B, eB, | D,A, dA, D,A, dA, | D,A, dA, D,A, dA, | E,G, B,G, E,G, B,G, |
+%
+% A'
+[V:LEAD] G A B2 | d4 | B2 A2 | G4 |
+[V:BASS] G,4 G,4 | D,4 D,4 | G,4 G,4 | G,4 G,4 |
+[V:ARP]  G,B, dB, G,B, dB, | D,A, dA, D,A, dA, | G,B, dB, G,B, dB, | G,B, dB, G,B, dB, |
+%
+[V:LEAD] G8 |]
+[V:BASS] G,8 |]
+[V:ARP]  G,B, dg z4 |]
