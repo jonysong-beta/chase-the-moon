@@ -472,10 +472,28 @@
       this.ctx = new AC();
       this.master = this.ctx.createGain();
       this.master.gain.value = this.enabled ? 0.9 : 0;
-      this.master.connect(this.ctx.destination);
+      // 母线压限：糊住瞬态峰值，手机喇叭不破
+      this.comp = this.ctx.createDynamicsCompressor();
+      this.comp.threshold.value = -16;
+      this.comp.knee.value = 12;
+      this.comp.ratio.value = 4;
+      this.comp.attack.value = 0.003;
+      this.comp.release.value = 0.22;
+      this.master.connect(this.comp);
+      this.comp.connect(this.ctx.destination);
+      // 音乐总线带通：70Hz 高通砍掉手机 reproduces 不了的超低（55Hz 底鼓/73Hz 贝斯
+      // 会逼喇叭过载破音），6.5kHz 低通磨掉方波毛刺
+      this.musicHP = this.ctx.createBiquadFilter();
+      this.musicHP.type = "highpass";
+      this.musicHP.frequency.value = 70;
+      this.musicLP = this.ctx.createBiquadFilter();
+      this.musicLP.type = "lowpass";
+      this.musicLP.frequency.value = 6500;
       this.musicGain = this.ctx.createGain();
       this.musicGain.gain.value = 0.34;
-      this.musicGain.connect(this.master);
+      this.musicGain.connect(this.musicHP);
+      this.musicHP.connect(this.musicLP);
+      this.musicLP.connect(this.master);
       this.sfxGain = this.ctx.createGain();
       this.sfxGain.gain.value = 0.45;
       this.sfxGain.connect(this.master);
@@ -577,8 +595,8 @@
           this.tone("square", 440, t, 0.04, 0.05);
           break;
         case "omen":
-          this.tone("sawtooth", 55, t, 0.8, 0.06, this.musicGain);
-          this.tone("square", 58, t + 0.05, 0.7, 0.04, this.musicGain);
+          this.tone("sawtooth", 78, t, 0.8, 0.06, this.musicGain);
+          this.tone("square", 82, t + 0.05, 0.7, 0.04, this.musicGain);
           break;
       }
     },
@@ -790,9 +808,9 @@
             this.tone(soft ? "sine" : "triangle", this.freq(b - 24), t, spb * (soft ? 3.2 : 2.1), 0.09 * boost, this.musicGain);
           if (dr === "k") {
             this.noise(t, 0.05, (soft ? 0.038 : 0.055) * boost);
-            this.tone("triangle", 55, t, 0.06, 0.05 * boost, this.musicGain);
+            this.tone("triangle", 72, t, 0.06, 0.05 * boost, this.musicGain);
           }
-          if (dr === "h") this.tone("square", 7000, t, 0.025, 0.016 * boost, this.musicGain);
+          if (dr === "h") this.tone("triangle", 7000, t, 0.025, 0.013 * boost, this.musicGain);
           this._nextTime += spb;
           this._step++;
         }
@@ -2882,17 +2900,6 @@
       ctx.font = "bold 14px 'Geist Mono', monospace";
       ctx.fillText("现在！", G.moon.x, G.moon.y - 36);
     }
-
-    const pct = clamp(q.t / QTE.duration, 0, 1);
-    const barY = H * 0.86;
-    const barW = W - 60;
-    ctx.fillStyle = "#15203D";
-    ctx.fillRect(30, barY, barW, 8);
-    ctx.fillStyle = q.t > QTE.duration * 0.75 ? "#FF2A6D" : "#E8EEF7";
-    ctx.fillRect(30, barY, barW * pct, 8);
-    ctx.strokeStyle = "#3A4A6B";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(30, barY, barW, 8);
   }
 
   function drawDiscover() {
