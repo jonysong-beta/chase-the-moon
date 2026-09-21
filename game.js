@@ -412,9 +412,9 @@
         this.data.ach.normal = this.data.ach.normal || Date.now();
       }
       if (!Array.isArray(this.data.board)) this.data.board = [];
-      if (!this.data.ach) this.data.ach = {};
-      if (!this.data.daily) this.data.daily = { date: "", best: 0, played: false };
-      if (!this.data.pb) this.data.pb = {};
+      if (!this.data.ach || typeof this.data.ach !== "object" || Array.isArray(this.data.ach)) this.data.ach = {};
+      if (!this.data.daily || typeof this.data.daily !== "object" || Array.isArray(this.data.daily)) this.data.daily = { date: "", best: 0, played: false };
+      if (!this.data.pb || typeof this.data.pb !== "object" || Array.isArray(this.data.pb)) this.data.pb = {};
       return this.data;
     },
     save() {
@@ -531,7 +531,8 @@
 
     resume() {
       this.ensure();
-      if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+      // iOS 来电/Siri 打断后 ctx 会停在 "interrupted"，不只 "suspended"
+      if (this.ctx && this.ctx.state !== "running") this.ctx.resume();
     },
 
     setEnabled(on) {
@@ -808,6 +809,9 @@
       this._nextTime = this.ctx.currentTime + 0.05;
       const pat = this.patterns[mode];
       if (!pat) return;
+      // 会话总线：切模式时旧模式尾音走渐隐，不垫在新模式第一拍上
+      this._bus = this.ctx.createGain();
+      this._bus.connect(this.musicGain);
       // chase is the tense run loop — keep it hotter than lobby/result
       const boost = mode === "chase" ? 1.35 : mode === "qte" ? 1.15 : 1;
       this.musicGain.gain.value = 0.34 * boost;
@@ -829,18 +833,18 @@
           const dr = p.drums[i] || ".";
           const t = this._nextTime;
           if (m !== null && m !== undefined) {
-            this.tone(soft ? "triangle" : "square", this.freq(m - 12), t, spb * (soft ? 2.4 : 1.7), (soft ? 0.046 : 0.055) * boost, this.musicGain);
-            this.tone(soft ? "sine" : "square", this.freq(m - 24), t, spb * (soft ? 1.8 : 1.2), 0.024 * boost, this.musicGain);
+            this.tone(soft ? "triangle" : "square", this.freq(m - 12), t, spb * (soft ? 2.4 : 1.7), (soft ? 0.046 : 0.055) * boost, this._bus);
+            this.tone(soft ? "sine" : "square", this.freq(m - 24), t, spb * (soft ? 1.8 : 1.2), 0.024 * boost, this._bus);
           }
           if (h !== null && h !== undefined)
-            this.tone(soft ? "sine" : "triangle", this.freq(h - 12), t, spb * (soft ? 4.2 : 2.0), (soft ? 0.03 : 0.034) * boost, this.musicGain);
+            this.tone(soft ? "sine" : "triangle", this.freq(h - 12), t, spb * (soft ? 4.2 : 2.0), (soft ? 0.03 : 0.034) * boost, this._bus);
           if (b !== null && b !== undefined)
-            this.tone(soft ? "sine" : "triangle", this.freq(b - 24), t, spb * (soft ? 3.2 : 2.1), 0.09 * boost, this.musicGain);
+            this.tone(soft ? "sine" : "triangle", this.freq(b - 24), t, spb * (soft ? 3.2 : 2.1), 0.09 * boost, this._bus);
           if (dr === "k") {
             this.noise(t, 0.05, (soft ? 0.038 : 0.055) * boost);
-            this.tone("triangle", 72, t, 0.06, 0.05 * boost, this.musicGain);
+            this.tone("triangle", 72, t, 0.06, 0.05 * boost, this._bus);
           }
-          if (dr === "h") this.tone("triangle", 7000, t, 0.025, 0.013 * boost, this.musicGain);
+          if (dr === "h") this.tone("triangle", 7000, t, 0.025, 0.013 * boost, this._bus);
           this._nextTime += spb;
           this._step++;
         }
@@ -868,6 +872,14 @@
         this._timer = null;
       }
       this._mode = "off";
+      const bus = this._bus;
+      if (bus && this.ctx) {
+        bus.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.05);
+        setTimeout(() => {
+          try { bus.disconnect(); } catch (_) {}
+        }, 400);
+      }
+      this._bus = null;
     },
   };
 
@@ -1038,6 +1050,12 @@
       el.btnJet.addEventListener("pointercancel", jetUp);
       el.btnJet.addEventListener("lostpointercapture", jetUp);
 
+      // 切屏强制清场：隐藏控件可能吞掉 pointerup/cancel，摇杆/喷射不能卡死
+      this.releaseAll = () => {
+        stickEnd();
+        jetUp();
+      };
+
       const qteHit = (e) => {
         if (e) e.preventDefault();
         this.qtePressed = true;
@@ -1137,7 +1155,8 @@
         Store.data.diff = next;
       }
     }
-    if (G.dailyMode) {
+    const isLiveDaily = G.dailyMode && (!G.runDate || G.runDate === todayKey());
+    if (isLiveDaily) {
       const k = todayKey();
       if (Store.data.daily.date !== k) Store.data.daily = { date: k, best: 0, played: true };
       Store.data.daily.played = true;
@@ -1153,7 +1172,7 @@
         Store.data.pb[G.diff] = t10;
         G.newPB = true;
       }
-      if (G.dailyMode) {
+      if (isLiveDaily) {
         const bt = Store.data.daily.bestTime;
         if (!bt || t10 < bt) {
           Store.data.daily.bestTime = t10;
@@ -1326,6 +1345,11 @@
     G.rank = 0;
     G.sector = 0;
     G.wellSticky = 0;
+    G.moonDim = 1;
+    Input.jetPressed = false;
+    Input.qtePressed = false;
+    Input.jet = false;
+    G.runDate = todayKey(); // 竞速成绩归属开局日：跨午夜局种子与成绩同一天
     G.blood =
       G.diff === "blood"
         ? {
@@ -1374,6 +1398,7 @@
 
   function setState(s) {
     G.state = s;
+    Input.releaseAll?.(); // 切屏瞬间若手指还按着，隐藏控件可能吞掉 pointerup，强制清场防摇杆卡死
     const stage = document.getElementById("stage");
     if (stage) {
       stage.classList.toggle("poster-mode", s === "cover");
@@ -1590,6 +1615,10 @@
     G.discoverT = PROG.discoverSec;
     G.bodies = [];
     G.moonDim = 1;
+    if (G.blood) { // 预警中的潮汐刺/冲击环不带进 discover/QTE
+      G.blood.spike = null;
+      G.blood.shock = null;
+    }
     setState("discover");
     AudioEngine.sfx("win");
     AudioEngine.startMusic("discover");
@@ -1981,12 +2010,13 @@
   function refreshTitleUI() {
     if (el.btnSound) {
       const on = AudioEngine.enabled;
+      // 自愈：LED/span 结构丢失时重建（历史版本 boot 曾清空按钮内容）
+      if (!el.btnSound.querySelector(".led") || !el.btnSound.querySelector("span")) {
+        el.btnSound.innerHTML = '<i class="led" aria-hidden="true"></i><span></span>';
+      }
       el.btnSound.setAttribute("aria-label", on ? "声音：开" : "声音：关");
-      const span = el.btnSound.querySelector("span");
-      if (span) span.textContent = "声音";
-      else el.btnSound.textContent = "声音";
-      const led = el.btnSound.querySelector(".led");
-      if (led) led.classList.toggle("on", on);
+      el.btnSound.querySelector("span").textContent = on ? "声音：开" : "声音：关";
+      el.btnSound.querySelector(".led").classList.toggle("on", on);
     }
     if (el.telEarth) el.telEarth.textContent = `CLASS ${DIFF[G.diff]?.label || "追寻之旅"}`;
     if (el.telWell) el.telWell.textContent = `PULL ×${DIFF[G.diff]?.wellMul ?? 1}`;
@@ -2502,7 +2532,12 @@
         G.progress = clamp(G.progress - PROG.hitPenalty * hurt, 0, 1);
         b.dead = true;
         if (e.mass < PHYS.massMin + 2) {
-          lose("质量崩溃 · 星尘难继");
+          // 同帧进度满格与致命撞击竞争时，让进度赢（别让玩家看到 100% 判负）
+          if (G.progress >= 1) {
+            enterDiscover();
+          } else {
+            lose("质量崩溃 · 星尘难继");
+          }
           return;
         }
       } else if (b.type === "signal") {
@@ -3499,7 +3534,7 @@
       } else if (G.state === "title" && (e.code === "Enter" || e.code === "Space")) {
         e.preventDefault();
         AudioEngine.resume();
-        beginRun(false);
+        beginRun(menuDaily);
       } else if (G.state === "intro" && (e.code === "Enter" || e.code === "Space")) {
         e.preventDefault();
         startRun();
@@ -3513,10 +3548,12 @@
   function boot() {
     loadBest();
     AudioEngine.enabled = Store.data.sound !== false;
-    if (el.btnSound) el.btnSound.textContent = "";
 
     // 英文字体套装：B Art Deco（Limelight + Josefin Sans）
-    const typePick = localStorage.getItem("chase_moon_type_pick") || "B";
+    let typePick = "B";
+    try {
+      typePick = localStorage.getItem("chase_moon_type_pick") || "B";
+    } catch (_) {}
     document.body.setAttribute("data-type", typePick);
 
     G.reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
