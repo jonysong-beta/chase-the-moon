@@ -8,7 +8,7 @@
   const S = W / 180; // scale factor from v1
 
   const PHYS = {
-    maxSpeed: 78 * S,
+    maxSpeed: 92 * S,
     accel: 420 * S,
     drag: 4.5,
     steer: 12.5, // velocity targeting rate (higher = tighter)
@@ -1655,7 +1655,7 @@
       e.vx -= e.vx * 2.2 * dt;
       e.vy -= e.vy * 2.2 * dt;
       const sp = Math.hypot(e.vx, e.vy);
-      const maxS = PHYS.maxSpeed * 0.85;
+      const maxS = PHYS.maxSpeed * 0.92;
       if (sp > maxS) {
         e.vx = (e.vx / sp) * maxS;
         e.vy = (e.vy / sp) * maxS;
@@ -2321,7 +2321,7 @@
       ay /= mag;
     }
 
-    const massFac = lerp(1.08, 0.82, (e.mass - PHYS.massMin) / (PHYS.massMax - PHYS.massMin));
+    const massFac = lerp(1.1, 0.88, (e.mass - PHYS.massMin) / (PHYS.massMax - PHYS.massMin));
     const sticky = G.wellSticky > 0 ? 0.72 : 1;
     const maxS = PHYS.maxSpeed * massFac * sticky * (e.jetT > 0 ? 1.25 : 1);
 
