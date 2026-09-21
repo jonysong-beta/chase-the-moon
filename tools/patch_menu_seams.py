@@ -107,5 +107,5 @@ border = (~outside) & ndimage.binary_dilation(outside, iterations=2)
 im[outside] = CREAM
 im[border] = HL
 
-Image.fromarray(np.clip(im, 0, 255).astype(np.uint8), "RGB").save(OUT, quality=90)
+Image.fromarray(np.clip(im, 0, 255).astype(np.uint8), "RGB").save(OUT, quality=80)
 print(f"seams patched (grain std={FINE_STD:.2f}), cream moved 1265 -> {NEW_BOUND}, rounded frame M={M} R={R} -> {OUT}")

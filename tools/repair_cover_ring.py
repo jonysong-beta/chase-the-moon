@@ -64,5 +64,5 @@ for c in range(3):
     sampled = ndimage.map_coordinates(im[..., c], [sy[sector], sx[sector]], order=1)
     im[..., c][sector] = sampled * w[sector] + im[..., c][sector] * (1 - w[sector])
 
-Image.fromarray(np.clip(im, 0, 255).astype(np.uint8), "RGB").save(OUT, quality=90)
+Image.fromarray(np.clip(im, 0, 255).astype(np.uint8), "RGB").save(OUT, quality=80)
 print("ring repaired over", T0, "to", T1, "deg")

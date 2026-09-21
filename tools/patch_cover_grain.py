@@ -145,5 +145,5 @@ for _ in range(int(0.00005 * FH * W)):
             for c, k in enumerate((1.0, 0.9, 0.72)):
                 im[y0:y1, x0:x1, c] += g * STAR_RGB[c] / 205 * k
 
-Image.fromarray(np.clip(im, 0, 255).astype(np.uint8), "RGB").save(OUT, quality=90)
+Image.fromarray(np.clip(im, 0, 255).astype(np.uint8), "RGB").save(OUT, quality=80)
 print("extension rebuilt below y =", SEAM, "+ unified star layer full image")

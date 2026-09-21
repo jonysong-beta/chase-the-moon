@@ -48,5 +48,5 @@ for _ in range(150):
         splat(x, y, rng.uniform(1.8, 2.4), rng.uniform(190, 240))
     added += 1
 
-Image.fromarray(np.clip(im, 0, 255).astype(np.uint8), "RGB").save(P, quality=90)
+Image.fromarray(np.clip(im, 0, 255).astype(np.uint8), "RGB").save(P, quality=80)
 print("moonspot stars added:", added)

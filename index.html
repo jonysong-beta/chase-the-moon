@@ -7,13 +7,16 @@
   <title>逐月计划</title>
   <link rel="stylesheet" href="assets/fonts/fonts.css" />
   <link rel="stylesheet" href="style.css" />
+  <!-- 首屏标题字体预加载：封面零闪烁 -->
+  <link rel="preload" href="assets/fonts/NotoSerifSC-700-sub.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="assets/fonts/Limelight.woff2" as="font" type="font/woff2" crossorigin />
 </head>
 <body>
   <div id="app">
     <div id="stage" class="stage">
       <!-- 全分辨率海报层：不经过低清 canvas；menu 延迟加载 -->
       <div id="cover-scene" class="cover-scene hidden">
-        <img class="cover-bg" src="assets/ui/cover-bg.webp?v=5" alt="" draggable="false" />
+        <img class="cover-bg" src="assets/ui/cover-bg.webp?v=6" alt="" draggable="false" />
         <div class="cover-keyline" aria-hidden="true">
           <i class="kl tl"></i><i class="kl tr"></i><i class="kl bl"></i><i class="kl br"></i>
         </div>
@@ -40,7 +43,6 @@
           <p class="cover-ver"><span class="ver-num">VER. 1.0</span><span class="ver-sep" aria-hidden="true"></span><span class="ver-name">AD LUNAM</span></p>
         </div>
       </div>
-      <img id="cover-art" class="poster-art hidden" src="assets/ui/cover.webp" alt="" draggable="false" />
       <img id="menu-art" class="poster-art hidden" alt="" draggable="false" />
       <canvas id="game" width="540" height="960" aria-label="逐月计划游戏画面"></canvas>
       <div class="grain" aria-hidden="true"></div>

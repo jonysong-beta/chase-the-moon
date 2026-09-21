@@ -231,7 +231,6 @@
   // ── DOM ────────────────────────────────────────────────
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d", { alpha: true });
-  const coverArt = document.getElementById("cover-art");
   const menuArt = document.getElementById("menu-art");
   let pixelScale = 2; // canvas px per logical px
 
@@ -333,7 +332,7 @@
 
   function ensureMenuArt() {
     if (menuArt && !menuArt.getAttribute("src")) {
-      menuArt.src = "assets/ui/menu.webp?v=9";
+      menuArt.src = "assets/ui/menu.webp?v=10";
     }
   }
 
@@ -3241,7 +3240,6 @@
     // poster layers (full-res DOM) — canvas only draws playfield chrome
     const useCover = G.state === "cover";
     const useMenu = G.state === "title";
-    if (coverArt) coverArt.classList.add("hidden"); // legacy flat poster unused
     if (coverScene) coverScene.classList.toggle("hidden", !useCover);
     if (menuArt) menuArt.classList.toggle("hidden", !useMenu);
     if (useCover) drawCoverPatch(dt);
