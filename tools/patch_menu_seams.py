@@ -4,6 +4,8 @@
 - x=0 / x=1043 两条 1px 竖直框线（仅仪场 navy 区，奶油带无此线）
 - 右缘水印残迹（x≈920-1043, y≈970-1080，原 AI 水印未除净）
 - 奶油边界 y1265 → y1410（屏 68% → 76%，仪场加长；inset 细线同步下移）
+- 星图收进圆角矩形「屏幕框」：四周奶油边距 36px、圆角 r30、2px 深墨描边，
+  监视器隐喻——奶油色是仪表机身，星图是显示出来的屏幕（用户定）
 
 重绘配方同 patch_cover_grain.py：底色取邻近干净星空逐通道中位数，
 颗粒 = 细噪（std 实测于干净区）+ 低频斑驳，星星小/中/亮/四芒四档、暖金色。
@@ -87,8 +89,23 @@ navy_base = med(1216, 1260, 100, 900)  # 补丁后该区已是干净星空，取
 repaint(NAVY_END - 4, NEW_BOUND, 0, W, navy_base)  # 原奶油边界实际起于 ~1262（webp 柔化），多吞几行
 CREAM = np.array([240.0, 230.0, 210.0])  # 原奶油带中位色（原图几乎无颗粒，保持平涂）
 im[NEW_BOUND:H] = CREAM
-HL = np.array([27.0, 23.0, 20.0])  # inset 细线原色
-im[NEW_BOUND + 15 : NEW_BOUND + 17, 62:982] = HL
+HL = np.array([27.0, 23.0, 20.0])  # 深墨描边色（取自原 inset 细线）
+
+# ── 星图收进圆角矩形「屏幕框」：外边距 M、圆角 R、2px 深墨描边 ──
+M, R = 36, 30
+yy, xx = np.mgrid[0:H, 0:W]
+outside = (xx < M) | (xx >= W - M) | (yy < M) | (yy >= NEW_BOUND)
+corners = (
+    (M + R, M + R, xx < M + R, yy < M + R),  # 左上
+    (W - M - R - 1, M + R, xx >= W - M - R, yy < M + R),  # 右上
+    (M + R, NEW_BOUND - R - 1, xx < M + R, yy >= NEW_BOUND - R),  # 左下
+    (W - M - R - 1, NEW_BOUND - R - 1, xx >= W - M - R, yy >= NEW_BOUND - R),  # 右下
+)
+for cx, cy, qx, qy in corners:
+    outside |= ((xx - cx) ** 2 + (yy - cy) ** 2 > R * R) & qx & qy
+border = (~outside) & ndimage.binary_dilation(outside, iterations=2)
+im[outside] = CREAM
+im[border] = HL
 
 Image.fromarray(np.clip(im, 0, 255).astype(np.uint8), "RGB").save(OUT, quality=90)
-print(f"seams patched (grain std={FINE_STD:.2f}), cream moved 1265 -> {NEW_BOUND} -> {OUT}")
+print(f"seams patched (grain std={FINE_STD:.2f}), cream moved 1265 -> {NEW_BOUND}, rounded frame M={M} R={R} -> {OUT}")

@@ -136,7 +136,7 @@ ffmpeg -y -i ../../bgm/results_score.wav -codec:a libmp3lame -b:a 96k -ar 22050 
 - **缓存版本号**：封面/面板三张图（`cover-bg.webp` / `cover-moon.webp` / `menu.webp`）每次内容变更，必须同步升 `index.html` 和 `game.js` 里的 `?v=N`——iOS Safari 图片缓存极顽固，只刷新不一定拿新图。
 - 不入库：`dist/`、`.playwright-cli/`、`music/raw/`、`music/pack/`（均为生成物，见 `.gitignore`）。
 - 封面底图管线（重跑必须按序）：`tools/patch_cover_grain.py` → `tools/repair_cover_ring.py`（两处缺口，参数见 DESIGN.md）→ `tools/patch_moonspot_stars.py`（加法，不可重复执行）。
-- 面板底图管线：`tools/patch_menu_seams.py`（源 `tools/menu-prseam.webp`）抹仪场烘焙断口——两条横向金线（y≈1041/1205）、x=0/1043 竖框线（仅 navy 区）、右缘 AI 水印残迹；并把奶油带从 y1265 下移到 y1410（屏 68%→76%，inset 细线同步下移）。
+- 面板底图管线：`tools/patch_menu_seams.py`（源 `tools/menu-prseam.webp`）抹仪场烘焙断口——两条横向金线（y≈1041/1205）、x=0/1043 竖框线（仅 navy 区）、右缘 AI 水印残迹；奶油边界 y1265→y1410；星图收进圆角矩形屏幕框（边距 36 / 圆角 30 / 2px 深墨描边，监视器隐喻，用户定）。
 
 ## 小红书小工具约束（打包前自查）
 

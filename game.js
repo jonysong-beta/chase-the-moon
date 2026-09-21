@@ -283,8 +283,8 @@
     stickBase: document.getElementById("stick-base"),
     stickKnob: document.getElementById("stick-knob"),
     btnJet: document.getElementById("btn-jet"),
-    telMoon: document.getElementById("tel-moon"),
     telEarth: document.getElementById("tel-earth"),
+    telWell: document.getElementById("tel-well"),
   };
 
   function ensureSegs(root, n = 10) {
@@ -308,7 +308,7 @@
 
   function ensureMenuArt() {
     if (menuArt && !menuArt.getAttribute("src")) {
-      menuArt.src = "assets/ui/menu.webp?v=7";
+      menuArt.src = "assets/ui/menu.webp?v=8";
     }
   }
 
@@ -1876,19 +1876,15 @@
   }
 
   function refreshTitleUI() {
-    const d = Store.data || Store.load();
     if (el.btnSound) {
       const label = AudioEngine.enabled ? "声音：开" : "声音：关";
       el.btnSound.setAttribute("aria-label", label);
       el.btnSound.textContent = label;
     }
-    const day = d.daily || {};
-    const k = todayKey();
-    const dailyBest = day.date === k && day.bestTime ? fmtTime(day.bestTime) : "—";
-    if (el.telMoon) el.telMoon.textContent = `RT ${dailyBest}`;
     if (el.telEarth) el.telEarth.textContent = `CLASS ${DIFF[G.diff]?.label || "标准"}`;
+    if (el.telWell) el.telWell.textContent = `PULL ×${DIFF[G.diff]?.wellMul ?? 1}`;
     if (el.dailyTip) {
-      el.dailyTip.textContent = "循月辉追近，月尘补质量，满条后光圈捕获";
+      el.dailyTip.textContent = "追寻月亮的光辉，它会带你找到方向";
     }
   }
 
