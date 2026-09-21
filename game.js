@@ -3397,15 +3397,6 @@
       setState("title");
     });
 
-    el.btnDailyCover =
-      el.btnDailyCover || document.getElementById("btn-daily-cover");
-    el.btnDailyCover?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      click();
-      AudioEngine.resume();
-      beginRun(true);
-    });
-
     el.btnBackCover?.addEventListener("click", (e) => {
       e.stopPropagation();
       click();

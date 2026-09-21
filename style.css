@@ -599,8 +599,8 @@ html, body {
   pointer-events: auto;
 }
 
-#btn-cover-start { left: 16.4%; }
-#btn-daily-cover { left: 52.5%; }
+/* 竞速入口已收进任务面板，封面单按钮全长（左缘与原双键组左缘对齐） */
+#btn-cover-start { left: 16.4%; width: 66.9%; }
 
 .cover-btn.ghost-btn {
   color: var(--cream-dim);
