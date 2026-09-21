@@ -707,6 +707,61 @@ body:not([data-type]) .cover-title {
   text-align: left;
 }
 
+/* —— 仪场遥测标签与准星（Apollo 任务图纸语言，01-mission-patch 参考）—— */
+.menu-tel {
+  position: absolute;
+  font-family: var(--mono);
+  text-align: left;
+  pointer-events: none;
+}
+
+.menu-tel .k {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: rgba(240, 230, 211, 0.55);
+}
+
+.menu-tel .v {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--gold-bright, #e8c878);
+  margin-top: 3px;
+}
+
+.menu-tel .v::before {
+  content: "+ ";
+  color: rgba(240, 230, 211, 0.45);
+}
+
+.menu-tel .v.dim {
+  color: rgba(240, 230, 211, 0.6);
+}
+
+/* 左上十字准星 / 右上角框（对焦框），细金描边 */
+.menu-reticle,
+.menu-bracket {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  top: 2%;
+  pointer-events: none;
+  opacity: 0.8;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.menu-reticle {
+  left: 3.5%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cg stroke='%23D4A84B' stroke-width='1' fill='none'%3E%3Ccircle cx='17' cy='17' r='10'/%3E%3Cpath d='M17 1v8M17 25v8M1 17h8M25 17h8'/%3E%3C/g%3E%3Ccircle cx='17' cy='17' r='1.6' fill='%23D4A84B'/%3E%3C/svg%3E");
+}
+
+.menu-bracket {
+  right: 5%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cg stroke='%23D4A84B' stroke-width='1' fill='none'%3E%3Cpath d='M1 12V1h11M22 1h11v11M33 22v11H22M12 33H1V22'/%3E%3C/g%3E%3Ccircle cx='17' cy='17' r='1.6' fill='%23D4A84B'/%3E%3C/svg%3E");
+}
+
 /* —— 任务面板：奶油带上的 DOM 控制区 —— */
 .menu-panel {
   position: absolute;

@@ -284,6 +284,8 @@
     stickKnob: document.getElementById("stick-knob"),
     btnJet: document.getElementById("btn-jet"),
     menuStatus: document.getElementById("menu-status"),
+    telMoon: document.getElementById("tel-moon"),
+    telEarth: document.getElementById("tel-earth"),
   };
 
   function ensureSegs(root, n = 10) {
@@ -307,7 +309,7 @@
 
   function ensureMenuArt() {
     if (menuArt && !menuArt.getAttribute("src")) {
-      menuArt.src = "assets/ui/menu.webp?v=5";
+      menuArt.src = "assets/ui/menu.webp?v=6";
     }
   }
 
@@ -1887,6 +1889,8 @@
     const day = d.daily || {};
     const k = todayKey();
     const dailyBest = day.date === k && day.bestTime ? fmtTime(day.bestTime) : "—";
+    if (el.telMoon) el.telMoon.textContent = `RT ${dailyBest}`;
+    if (el.telEarth) el.telEarth.textContent = `CLASS ${DIFF[G.diff]?.label || "标准"}`;
     if (el.dailyTip) {
       el.dailyTip.textContent =
         `循月辉追近，月尘补质量，满条后光圈捕获。通关自动升档；今日竞速在封面（今日最佳 ${dailyBest}）`;

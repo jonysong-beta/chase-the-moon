@@ -82,6 +82,21 @@
         <!-- 任务面板：插画 + DOM 控制区（奶油带上），按钮即真文字 -->
         <div id="screen-title" class="screen menu-screen hidden">
           <p class="sr-only">任务面板</p>
+          <!-- 仪场遥测装饰：百分比定位对 1044×1884 底图稳定（舞台锁 9:16，cover 顶锚只裁底部 28px） -->
+          <div class="menu-reticle" aria-hidden="true"></div>
+          <div class="menu-bracket" aria-hidden="true"></div>
+          <div class="menu-tel" style="left:5%; top:34%">
+            <span class="k">TARGET / LUNA</span>
+            <span class="v" id="tel-moon">RT --:--.-</span>
+          </div>
+          <div class="menu-tel" style="left:5%; top:45.5%">
+            <span class="k">SOL III / EARTH</span>
+            <span class="v" id="tel-earth">CLASS 标准</span>
+          </div>
+          <div class="menu-tel" style="left:60%; top:26.5%">
+            <span class="k">ANOMALY / VOID</span>
+            <span class="v dim">RNG 384.40</span>
+          </div>
           <div class="menu-panel">
             <p class="menu-status" id="menu-status">当前 · 标准</p>
             <button type="button" class="btn primary wide" id="btn-start">开始追逐</button>
