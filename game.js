@@ -105,7 +105,7 @@
 
   const DIFF = {
     easy: {
-      label: "休闲",
+      label: "追寻之旅",
       wellMul: 0.5,
       spawnMul: 0.72,
       scrollMul: 0.85,
@@ -118,7 +118,7 @@
       vacuumMul: 1.15,
     },
     normal: {
-      label: "标准",
+      label: "宇宙冒险",
       wellMul: 1,
       spawnMul: 1,
       scrollMul: 1,
@@ -131,7 +131,7 @@
       vacuumMul: 1,
     },
     hard: {
-      label: "虚空",
+      label: "坠入虚空",
       wellMul: 1.4,
       spawnMul: 1.22,
       scrollMul: 1.12,
@@ -300,6 +300,7 @@
     cover: null,
     menu: null,
     moon: null,
+    moonDark: null,
     earth: null,
     well: null,
     rock: null,
@@ -323,12 +324,14 @@
     // cover/menu live as DOM <img>; only gameplay sprites need canvas handles
     return Promise.all([
       load("assets/sprites/moon.webp?v=2"),
+      load("assets/sprites/moon-dark.webp?v=1"),
       load("assets/sprites/earth.webp"),
       load("assets/sprites/well.webp"),
       load("assets/sprites/rock.webp"),
       load("assets/sprites/signal.webp"),
-    ]).then(([moon, earth, well, rock, signal]) => {
+    ]).then(([moon, moonDark, earth, well, rock, signal]) => {
       ART.moon = moon;
+      ART.moonDark = moonDark;
       ART.earth = earth;
       ART.well = well;
       ART.rock = rock;
@@ -2660,8 +2663,10 @@
     const { x, y, r } = m;
     const dim = G.moonDim === undefined ? 1 : G.moonDim;
     ctx.globalAlpha = clamp(dim, 0.25, 1);
-    if (ART.moon) {
-      drawImg(ART.moon, x, y, r * 2.45, r * 2.45);
+    // 月之暗面（blood）用旧版惨白坑洞月；其余档全局金色圆月
+    const art = G.diff === "blood" && ART.moonDark ? ART.moonDark : ART.moon;
+    if (art) {
+      drawImg(art, x, y, r * 2.45, r * 2.45);
     } else {
       ctx.fillStyle = "#E8C878";
       ctx.beginPath();
