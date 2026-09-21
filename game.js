@@ -11,7 +11,7 @@
     maxSpeed: 78 * S,
     accel: 420 * S,
     drag: 4.5,
-    steer: 11, // velocity targeting rate (higher = tighter)
+    steer: 12.5, // velocity targeting rate (higher = tighter)
     jetAccel: 210 * S,
     jetCooldown: 0.42,
     jetDuration: 0.22,
@@ -34,7 +34,7 @@
     catchIn: 0.95,
     perfectIn: 0.45,
     duration: 22,
-    tutorialSec: 2.4,
+    tutorialSec: 4.5,
     moonDrift: 34, // px/s wander
   };
 
@@ -322,7 +322,7 @@
       });
     // cover/menu live as DOM <img>; only gameplay sprites need canvas handles
     return Promise.all([
-      load("assets/sprites/moon.webp"),
+      load("assets/sprites/moon.webp?v=2"),
       load("assets/sprites/earth.webp"),
       load("assets/sprites/well.webp"),
       load("assets/sprites/rock.webp"),
@@ -898,20 +898,40 @@
         knob.style.transform = `translate(${dx}px, ${dy}px)`;
       };
 
+      // floating origin: base jumps to the touch point so deflection always
+      // starts from zero — reads as much more 跟手 than a fixed pad
+      const BASE_R = 44; // 88px dial
+      const TRAVEL = 32; // knob max travel (px) — knob edge stays on the dial
+      const DEAD = 5; // px of travel that does nothing
+      const FULL = 26; // px of travel that reaches full deflection
+      let stickHome = null; // resting base position (zone coords)
+      let stickCX = 0; // active stick center (client coords)
+      let stickCY = 0;
+
+      const stickPlace = (zone, tx, ty) => {
+        const zw = zone.clientWidth;
+        const zh = zone.clientHeight;
+        const cx = clamp(tx, BASE_R + 2, Math.max(BASE_R + 2, zw - BASE_R - 2));
+        const cy = clamp(ty, BASE_R + 2, Math.max(BASE_R + 2, zh - BASE_R - 2));
+        base.style.left = cx - BASE_R + "px";
+        base.style.top = cy - BASE_R + "px";
+        return { cx, cy };
+      };
+
       const stickMove = (clientX, clientY) => {
-        const r = base.getBoundingClientRect();
-        const cx = r.left + r.width / 2;
-        const cy = r.top + r.height / 2;
-        const maxR = r.width * 0.38;
-        let dx = clientX - cx;
-        let dy = clientY - cy;
-        const len = Math.hypot(dx, dy) || 1;
-        if (len > maxR) {
-          dx = (dx / len) * maxR;
-          dy = (dy / len) * maxR;
+        let dx = clientX - stickCX;
+        let dy = clientY - stickCY;
+        const len = Math.hypot(dx, dy);
+        if (len > TRAVEL) {
+          dx = (dx / len) * TRAVEL;
+          dy = (dy / len) * TRAVEL;
         }
-        this.stickAx = dx / maxR;
-        this.stickAy = dy / maxR;
+        // deadzone, then ramp to full well before the travel edge
+        const v = len <= DEAD ? 0 : clamp((len - DEAD) / (FULL - DEAD), 0, 1);
+        const nx = len > 0 ? dx / len : 0;
+        const ny = len > 0 ? dy / len : 0;
+        this.stickAx = nx * v;
+        this.stickAy = ny * v;
         this.applyAxes();
         setKnob(dx, dy);
       };
@@ -922,6 +942,11 @@
         this.stickId = null;
         this.applyAxes();
         setKnob(0, 0);
+        base.classList.remove("live");
+        if (stickHome) {
+          base.style.left = stickHome.x + "px";
+          base.style.top = stickHome.y + "px";
+        }
       };
 
       const stickZone = document.getElementById("stick-zone");
@@ -932,6 +957,15 @@
           if (this.stickId != null) return;
           stickZone.setPointerCapture(e.pointerId);
           this.stickId = e.pointerId;
+          if (!stickHome) {
+            stickHome = { x: base.offsetLeft, y: base.offsetTop };
+            base.style.bottom = "auto";
+          }
+          const zr = stickZone.getBoundingClientRect();
+          const c = stickPlace(stickZone, e.clientX - zr.left, e.clientY - zr.top);
+          stickCX = zr.left + c.cx;
+          stickCY = zr.top + c.cy;
+          base.classList.add("live");
           stickMove(e.clientX, e.clientY);
         },
         { passive: false }
@@ -1189,6 +1223,41 @@
     ctx.lineTo(x - r * 0.28, y - r * 0.28);
     ctx.closePath();
     ctx.fill();
+  }
+
+  // 06-gameplay-stipple: printed stipple sky — pre-rendered dot tile, one fill per frame
+  let stipplePat = null;
+  function drawStipple(alpha) {
+    if (!stipplePat) {
+      const c = document.createElement("canvas");
+      c.width = 128;
+      c.height = 128;
+      const g = c.getContext("2d");
+      for (let i = 0; i < 300; i++) {
+        const x = (Math.random() * 128) | 0;
+        const y = (Math.random() * 128) | 0;
+        g.globalAlpha = 0.25 + Math.random() * 0.75;
+        g.fillStyle = Math.random() < 0.82 ? "#F0E6D3" : "#C5B89A";
+        const s = Math.random() < 0.1 ? 2 : 1;
+        g.fillRect(x, y, s, s);
+      }
+      stipplePat = ctx.createPattern(c, "repeat");
+      if (!stipplePat) return;
+    }
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = stipplePat;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
+
+  // thin cream inner frame — poster keyline carried into the playfield
+  function drawKeylineFrame() {
+    ctx.save();
+    ctx.strokeStyle = "rgba(240,230,211,0.4)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(5.5, 5.5, W - 11, H - 11);
+    ctx.restore();
   }
 
   function dashedLine(x1, y1, x2, y2, color, dash = 4, gap = 4, w = 1) {
@@ -2715,7 +2784,7 @@
 
   /** Opening legend: small sprites + short names, not jargon */
   function drawRunLegend() {
-    const a = clamp(Math.min(G.runT / 0.35, (4.2 - G.runT) / 0.8), 0, 1);
+    const a = clamp(Math.min(G.runT / 0.35, (6.5 - G.runT) / 0.8), 0, 1);
     if (a <= 0) return;
     const x0 = 22;
     const y0 = H * 0.36;
@@ -3178,6 +3247,8 @@
     ctx.fillStyle = "#0B1520";
     ctx.fillRect(-10, -10, W + 20, H + 20);
 
+    const inRun = G.state === "play" || G.state === "discover" || G.state === "qte";
+    if (inRun) drawStipple(0.1);
     drawStars(dt);
     drawDarkTendril();
 
@@ -3223,7 +3294,7 @@
       drawParticles();
       if (G.state === "discover") drawDiscover();
       if (G.state === "qte") drawQTE();
-      if (G.state === "play" && G.runT < 4.2) {
+      if (G.state === "play" && G.runT < 6.5) {
         drawRunLegend();
       }
     }
@@ -3240,6 +3311,8 @@
     ctx.fillStyle = "#000";
     for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 1);
     ctx.globalAlpha = 1;
+
+    if (inRun) drawKeylineFrame();
 
     ctx.restore();
   }
