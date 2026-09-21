@@ -179,9 +179,28 @@
     { id: "combo10", name: "无瑕套捕", desc: "一次 miss 都没有就套满" },
     { id: "score80", name: "高分", desc: "总分≥80" },
     { id: "daily", name: "今日竞速", desc: "完成一次今日竞速" },
-    { id: "hard", name: "虚空航路", desc: "标准通关后解锁虚空难度" },
-    { id: "blood", name: "月之暗面", desc: "虚空通关后解锁月之暗面" },
+    { id: "normal", name: "宇宙冒险", desc: "通关追寻之旅后解锁" },
+    { id: "hard", name: "坠入虚空", desc: "通关宇宙冒险后解锁" },
+    { id: "blood", name: "月之暗面", desc: "通关坠入虚空后解锁" },
   ];
+
+  // 难度阶梯：逐级通关解锁（easy→normal→hard→blood），无手动选择器
+  const LADDER = ["easy", "normal", "hard", "blood"];
+
+  function maxUnlockedDiff() {
+    const a = (Store.data && Store.data.ach) || {};
+    if (a.blood) return "blood";
+    if (a.hard) return "hard";
+    if (a.normal) return "normal";
+    return "easy";
+  }
+
+  function clampDiff(d) {
+    const want = LADDER.indexOf(d);
+    if (want < 0) return maxUnlockedDiff();
+    const max = LADDER.indexOf(maxUnlockedDiff());
+    return LADDER[Math.min(want, max)];
+  }
 
   const ENDINGS = {
     perfect: {
@@ -324,7 +343,7 @@
     // cover/menu live as DOM <img>; only gameplay sprites need canvas handles
     return Promise.all([
       load("assets/sprites/moon.webp?v=2"),
-      load("assets/sprites/moon-dark.webp?v=1"),
+      load("assets/sprites/moon-dark.webp?v=2"),
       load("assets/sprites/earth.webp"),
       load("assets/sprites/well.webp"),
       load("assets/sprites/rock.webp"),
@@ -378,11 +397,15 @@
         this.data = {
           board: [],
           ach: {},
-          diff: "normal",
+          diff: "easy",
           sound: true,
           daily: { date: "", best: 0, played: false },
           pb: {},
         };
+      } else if (!this.data.ach || !this.data.ach.normal) {
+        // 老存档（v3 起默认为标准档）→ 追溯解锁宇宙冒险，不降级老玩家
+        this.data.ach = this.data.ach || {};
+        this.data.ach.normal = this.data.ach.normal || Date.now();
       }
       if (!Array.isArray(this.data.board)) this.data.board = [];
       if (!this.data.ach) this.data.ach = {};
@@ -1072,10 +1095,7 @@
 
   function loadBest() {
     Store.load();
-    const d = Store.data.diff;
-    G.diff = d === "easy" || d === "hard" || d === "blood" ? d : "normal";
-    if (G.diff === "hard" && !Store.data.ach.hard) G.diff = "normal";
-    if (G.diff === "blood" && !Store.data.ach.blood) G.diff = Store.data.ach.hard ? "hard" : "normal";
+    G.diff = clampDiff(Store.data.diff);
     const board = Store.data.board;
     G.lastBest = board && board[0] ? board[0] : null;
   }
@@ -1102,14 +1122,14 @@
     if (G.outcome === "perfect") Store.unlock("perfect");
     if (score >= 80) Store.unlock("score80");
     if (G.qte && G.qte.miss === 0 && G.qte.locks >= (G.qte.need || 1)) Store.unlock("combo10");
-    // clear standard (or easy) unlocks the void lane
+    // 逐级通关解锁：追寻之旅→宇宙冒险→坠入虚空→月之暗面
     if (G.outcome === "close" || G.outcome === "perfect") {
-      if (G.diff === "hard") Store.unlock("blood");
-      else if (G.diff !== "blood") Store.unlock("hard");
+      if (G.diff === "easy") Store.unlock("normal");
+      else if (G.diff === "normal") Store.unlock("hard");
+      else if (G.diff === "hard") Store.unlock("blood");
       // 通关即默认升档（竞速局不参与），回任务面板也是新档位
       if (!G.dailyMode) {
-        const ladder = ["easy", "normal", "hard", "blood"];
-        const next = ladder[Math.min(ladder.indexOf(G.diff) + 1, ladder.length - 1)];
+        const next = LADDER[Math.min(LADDER.indexOf(G.diff) + 1, LADDER.length - 1)];
         Store.data.diff = next;
       }
     }
