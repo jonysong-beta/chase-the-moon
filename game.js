@@ -11,7 +11,7 @@
     maxSpeed: 92 * S,
     accel: 420 * S,
     drag: 4.5,
-    steer: 12.5, // velocity targeting rate (higher = tighter)
+    steer: 24, // velocity targeting rate — near-direct (MoBA stick)
     jetAccel: 210 * S,
     jetCooldown: 0.42,
     jetDuration: 0.22,
@@ -30,12 +30,13 @@
     needLocks: 3,
     needLocksEasy: 2,
     ringR: 64,
-    // Visual ring ≈ catch zone. Old 0.72 looked "in the circle" but missed.
+    // Main ring is DRAWN at the catch bound (WYSIWYG). Limb pad: moon edge can count.
     catchIn: 0.95,
     perfectIn: 0.45,
-    duration: 22,
+    limbPad: 0.4,
+    duration: 15,
     tutorialSec: 4.5,
-    moonDrift: 34, // px/s wander
+    moonDrift: 34,
   };
 
   const PROG = {
@@ -184,7 +185,7 @@
     { id: "blood", name: "月之暗面", desc: "通关坠入虚空后解锁" },
   ];
 
-  // 难度阶梯：逐级通关解锁（easy→normal→hard→blood），无手动选择器
+  // 难度阶梯：逐级通关解锁（easy→normal→hard→blood）；面板刻度盘仅已解锁档可选
   const LADDER = ["easy", "normal", "hard", "blood"];
 
   function maxUnlockedDiff() {
@@ -388,8 +389,35 @@
   // ── Local store (XHS container: no network, isolated localStorage) ──
   const STORE_KEY = "chase_moon_v3";
 
+  function sanitizeBoardEntry(e) {
+    if (!e || typeof e !== "object") return null;
+    const score = Math.round(Number(e.score));
+    if (!isFinite(score)) return null;
+    const timeN = e.time == null ? NaN : Number(e.time);
+    const num = (v, d) => {
+      const n = Number(v);
+      return isFinite(n) ? n : d;
+    };
+    return {
+      id: String(e.id == null ? "" : e.id).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 48),
+      score,
+      ending: e.ending === "perfect" || e.ending === "close" ? e.ending : "fail",
+      mass: Math.round(clamp(num(e.mass, 0), 0, 999)),
+      qteP: Math.round(clamp(num(e.qteP, 0), 0, 99)),
+      qteG: Math.round(clamp(num(e.qteG, 0), 0, 99)),
+      qteM: Math.round(clamp(num(e.qteM, 0), 0, 99)),
+      combo: Math.round(clamp(num(e.combo, 0), 0, 99)),
+      prog: Math.round(clamp(num(e.prog, 0), 0, 100)),
+      diff: DIFF[e.diff] ? e.diff : "easy",
+      daily: !!e.daily,
+      time: isFinite(timeN) ? clamp(timeN, 0, 36000) : null,
+      ts: num(e.ts, 0),
+    };
+  }
+
   const Store = {
     data: null,
+    _saveFail: false,
     load() {
       try {
         const raw = localStorage.getItem(STORE_KEY);
@@ -412,15 +440,34 @@
         this.data.ach.normal = this.data.ach.normal || Date.now();
       }
       if (!Array.isArray(this.data.board)) this.data.board = [];
+      this.data.board = this.data.board.map(sanitizeBoardEntry).filter(Boolean).slice(0, 10);
       if (!this.data.ach || typeof this.data.ach !== "object" || Array.isArray(this.data.ach)) this.data.ach = {};
       if (!this.data.daily || typeof this.data.daily !== "object" || Array.isArray(this.data.daily)) this.data.daily = { date: "", best: 0, played: false };
+      this.data.daily.date = String(this.data.daily.date || "").slice(0, 16);
+      this.data.daily.best = Math.round(clamp(Number(this.data.daily.best) || 0, 0, 999));
+      this.data.daily.played = !!this.data.daily.played;
+      const bt = Number(this.data.daily.bestTime);
+      this.data.daily.bestTime = isFinite(bt) && bt > 0 ? clamp(bt, 0, 36000) : null;
       if (!this.data.pb || typeof this.data.pb !== "object" || Array.isArray(this.data.pb)) this.data.pb = {};
+      Object.keys(this.data.pb).forEach((k) => {
+        const t = Number(this.data.pb[k]);
+        if (!DIFF[k] || !isFinite(t) || t <= 0) delete this.data.pb[k];
+        else this.data.pb[k] = clamp(t, 0, 36000);
+      });
       return this.data;
     },
     save() {
       try {
         localStorage.setItem(STORE_KEY, JSON.stringify(this.data));
-      } catch (_) {}
+        this._saveFail = false;
+        return true;
+      } catch (_) {
+        if (!this._saveFail) {
+          this._saveFail = true;
+          showToast("本机存储不可用 · 成绩可能丢失");
+        }
+        return false;
+      }
     },
     unlock(id) {
       if (!this.data.ach[id]) {
@@ -566,19 +613,26 @@
       };
     },
 
+    _noiseBuf: null,
     noise(t0, dur, gain = 0.08) {
       if (!this.ctx || !this.enabled) return;
-      const len = Math.max(1, (dur * this.ctx.sampleRate) | 0);
-      const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      // 共用一段白噪，包络走 gain —— 避免每次底鼓新建 buffer
+      if (!this._noiseBuf) {
+        const len = Math.max(1, (0.5 * this.ctx.sampleRate) | 0);
+        const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+        this._noiseBuf = buf;
+      }
       const src = this.ctx.createBufferSource();
       const g = this.ctx.createGain();
-      g.gain.value = gain;
-      src.buffer = buf;
+      g.gain.setValueAtTime(gain, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + Math.max(0.02, dur));
+      src.buffer = this._noiseBuf;
       src.connect(g);
       g.connect(this.sfxGain);
       src.start(t0);
+      src.stop(t0 + dur + 0.02);
       src.onended = () => {
         try {
           g.disconnect();
@@ -942,11 +996,11 @@
 
       // floating origin: base jumps to the touch point so deflection always
       // starts from zero — reads as much more 跟手 than a fixed pad
-      const BASE_R = 44; // 88px dial
-      const TRAVEL = 32; // knob max travel (px) — knob edge stays on the dial
-      const DEAD = 5; // px of travel that does nothing
-      const FULL = 26; // px of travel that reaches full deflection
-      let stickHome = null; // resting base position (zone coords)
+      // HoK-class ergonomics: large thumb travel, tiny deadzone, near-linear
+      const BASE_R = 48; // 96px dial
+      const TRAVEL = 44; // knob travel ≈ dial radius
+      const DEAD = 3; // px — ignore tremor only
+      const FULL = 40; // full deflection at ~91% of travel
       let stickCX = 0; // active stick center (client coords)
       let stickCY = 0;
 
@@ -968,8 +1022,9 @@
           dx = (dx / len) * TRAVEL;
           dy = (dy / len) * TRAVEL;
         }
-        // deadzone, then ramp to full well before the travel edge
-        const v = len <= DEAD ? 0 : clamp((len - DEAD) / (FULL - DEAD), 0, 1);
+        // near-linear (t^1.1): predictable 1:1 like a MOBA stick — no mush at center
+        const t = len <= DEAD ? 0 : clamp((len - DEAD) / (FULL - DEAD), 0, 1);
+        const v = t <= 0 ? 0 : Math.pow(t, 1.1);
         const nx = len > 0 ? dx / len : 0;
         const ny = len > 0 ? dy / len : 0;
         this.stickAx = nx * v;
@@ -985,10 +1040,10 @@
         this.applyAxes();
         setKnob(0, 0);
         base.classList.remove("live");
-        if (stickHome) {
-          base.style.left = stickHome.x + "px";
-          base.style.top = stickHome.y + "px";
-        }
+        // 归位交回 CSS left/bottom，resize 后不会用过期缓存坐标
+        base.style.left = "";
+        base.style.top = "";
+        base.style.bottom = "";
       };
 
       const stickZone = document.getElementById("stick-zone");
@@ -999,15 +1054,13 @@
           if (this.stickId != null) return;
           stickZone.setPointerCapture(e.pointerId);
           this.stickId = e.pointerId;
-          if (!stickHome) {
-            stickHome = { x: base.offsetLeft, y: base.offsetTop };
-            base.style.bottom = "auto";
-          }
+          // kill CSS slide BEFORE moving base — snap under thumb
+          base.classList.add("live");
+          base.style.bottom = "auto";
           const zr = stickZone.getBoundingClientRect();
           const c = stickPlace(stickZone, e.clientX - zr.left, e.clientY - zr.top);
           stickCX = zr.left + c.cx;
           stickCY = zr.top + c.cy;
-          base.classList.add("live");
           stickMove(e.clientX, e.clientY);
         },
         { passive: false }
@@ -1681,7 +1734,14 @@
 
   function updateQTE(dt) {
     const q = G.qte;
-    if (!q || q.done) return;
+    if (!q) return;
+    if (q.done) {
+      if (q.endT > 0) {
+        q.endT -= dt;
+        if (q.endT <= 0) finishQTE();
+      }
+      return;
+    }
     q.t += dt;
     q.feedbackT = Math.max(0, q.feedbackT - dt);
     q.cool = Math.max(0, q.cool - dt);
@@ -1696,17 +1756,11 @@
         ax /= mag;
         ay /= mag;
       }
-      const accel = PHYS.accel * 1.15;
-      e.vx += ax * accel * dt;
-      e.vy += ay * accel * dt;
-      e.vx -= e.vx * 2.2 * dt;
-      e.vy -= e.vy * 2.2 * dt;
-      const sp = Math.hypot(e.vx, e.vy);
+      // velocity targeting — same family as chase (near-direct)
+      const k = 1 - Math.exp(-22 * dt);
       const maxS = PHYS.maxSpeed * 0.92;
-      if (sp > maxS) {
-        e.vx = (e.vx / sp) * maxS;
-        e.vy = (e.vy / sp) * maxS;
-      }
+      e.vx += (ax * maxS - e.vx) * k;
+      e.vy += (ay * maxS - e.vy) * k;
       e.x += e.vx * dt;
       e.y += e.vy * dt;
       const pad = e.r + 8;
@@ -1719,8 +1773,9 @@
     if (q.cool <= 0) {
       const massG = e ? clamp(e.mass / 55, 0.55, 1.6) : 1;
       const wob = Math.sin(q.t * 1.7) * 0.6 + Math.cos(q.t * 0.9) * 0.4;
-      q.moonVx += wob * 12 * dt;
-      q.moonVy += Math.cos(q.t * 1.3) * 9 * dt;
+      const agit = 1 + q.locks * 0.35;
+      q.moonVx += wob * 12 * agit * dt;
+      q.moonVy += Math.cos(q.t * 1.3) * 9 * agit * dt;
       if (e) {
         const dx = e.x - G.moon.x;
         const dy = e.y - G.moon.y;
@@ -1732,8 +1787,8 @@
           q.moonVy += (dy / d) * f;
         }
       }
-      // calmer drift so the ring can actually hold the moon
-      const drift = QTE.moonDrift * (1 + q.locks * 0.06) * (1.85 - massG * 0.45);
+      // drift escalates with each lock — tension ramp
+      const drift = QTE.moonDrift * (1 + q.locks * 0.18) * (1.85 - massG * 0.45);
       const ms = Math.hypot(q.moonVx, q.moonVy) || 1;
       if (ms > drift) {
         q.moonVx = (q.moonVx / ms) * drift;
@@ -1761,16 +1816,22 @@
       G.moon.r = lerp(G.moon.r || 22, 22, 0.12);
     }
 
-    // lasso readiness: moon inside earth's light ring (mass strengthens ring)
+    // lasso readiness: main ring IS the catch bound (WYSIWYG) + limb pad
     const ex = e ? e.x : W * 0.5;
     const ey = e ? e.y : H * 0.62;
     const massFac = e ? clamp((e.mass - PHYS.massMin) / (50 - PHYS.massMin), 0.88, 1.15) : 1;
     const ringR = QTE.ringR * massFac;
     q.ringR = ringR;
     const d = Math.hypot(G.moon.x - ex, G.moon.y - ey);
-    const ratio = d / ringR;
-    q.ready = ratio <= QTE.catchIn;
-    q.ratio = ratio;
+    const mr = G.moon.r || 22;
+    const catchR = ringR * QTE.catchIn + mr * (QTE.limbPad || 0);
+    const perfectR = ringR * QTE.perfectIn;
+    q.catchR = catchR;
+    q.perfectR = perfectR;
+    q.ratio = d / ringR;
+    q.ready = d <= catchR;
+    q.perfectReady = d <= perfectR;
+    q.near = !q.ready && d <= ringR * 1.28;
     if (q.ready && !q.readySfx) {
       q.readySfx = true;
       AudioEngine.sfx("qte_good");
@@ -1802,31 +1863,41 @@
         q.combo++;
         q.bestCombo = Math.max(q.bestCombo, q.combo);
         q.locks++;
-        if (ratio <= QTE.perfectIn) {
+        const isPerfect = d <= perfectR;
+        if (isPerfect) {
           q.perfect++;
           q.feedback = "完美套住！";
           AudioEngine.sfx("qte_perfect");
-          burst(G.moon.x, G.moon.y, "#FFD166", 18, 75);
-          G.flash = 0.15;
+          burst(G.moon.x, G.moon.y, "#FFD166", 28, 95);
+          burst(G.moon.x, G.moon.y, "#E8C878", 14, 55);
+          G.flash = 0.22;
+          if (!G.reduceMotion) G.hitStop = 0.12;
         } else {
           q.good++;
           q.feedback = "抓住了";
           AudioEngine.sfx("qte_good");
-          burst(G.moon.x, G.moon.y, "#C5D0E6", 12, 45);
+          burst(G.moon.x, G.moon.y, "#C5D0E6", 16, 55);
+          G.flash = 0.1;
+          if (!G.reduceMotion) G.hitStop = 0.07;
         }
         q.feedbackT = 0.7;
         q.cool = 0.55;
-        // slip away to a new spot
+        // slip away — farther each lock
         const ang = Math.random() * Math.PI * 2;
-        const nx = clamp(W * 0.5 + Math.cos(ang) * 90, 40, W - 40);
-        const ny = clamp(H * 0.35 + Math.sin(ang) * 80, 60, H - 140);
+        const slipR = 90 + q.locks * 18;
+        const nx = clamp(W * 0.5 + Math.cos(ang) * slipR, 40, W - 40);
+        const ny = clamp(H * 0.35 + Math.sin(ang) * (80 + q.locks * 12), 60, H - 140);
         G.moon.x = nx;
         G.moon.y = ny;
         q.moonVx = Math.cos(ang + 1) * QTE.moonDrift * 0.7;
         q.moonVy = Math.sin(ang + 0.4) * QTE.moonDrift * 0.7;
         if (q.locks >= q.need) {
           q.done = true;
-          finishQTE();
+          q.endT = 0.45;
+          if (!G.reduceMotion) G.hitStop = 0.15;
+          G.flash = 0.28;
+          AudioEngine.sfx("qte_perfect");
+          burst(G.moon.x, G.moon.y, "#FFD166", 36, 100);
           return;
         }
       } else {
@@ -1835,9 +1906,9 @@
         q.feedback = "光圈没套住月亮";
         q.feedbackT = 0.6;
         AudioEngine.sfx("qte_miss");
-        // moon startled — mild only
-        q.moonVx *= 1.12;
-        q.moonVy *= 1.12;
+        q.moonVx *= 1.2;
+        q.moonVy *= 1.2;
+        G.flash = 0.06;
       }
     }
 
@@ -1855,7 +1926,7 @@
 
     if (q.t >= QTE.duration) {
       q.done = true;
-      finishQTE();
+      q.endT = 0.25;
     }
   }
 
@@ -2081,7 +2152,7 @@
       .join("\n");
   }
 
-  // XHS 容器禁用 clipboard / execCommand → 改为展示可选中文案，用户长按复制
+  // XHS 容器禁用剪贴板写入 → 改为展示可选中文案，用户长按复制
   function showShareText() {
     const node = el.shareText;
     if (!node) return;
@@ -2372,16 +2443,14 @@
     let ax = Input.ax;
     let ay = Input.ay;
     const mag = Math.hypot(ax, ay);
-    if (mag < 0.12) {
-      ax = 0;
-      ay = 0;
-    } else if (mag > 1) {
+    // stick deadzone already applied — no second cutoff (MOBA 1:1 trim)
+    if (mag > 1) {
       ax /= mag;
       ay /= mag;
     }
 
     const massFac = lerp(1.1, 0.88, (e.mass - PHYS.massMin) / (PHYS.massMax - PHYS.massMin));
-    const sticky = G.wellSticky > 0 ? 0.72 : 1;
+    const sticky = G.wellSticky > 0 ? lerp(1, 0.82, G.wellSticky / 0.25) : 1;
     const maxS = PHYS.maxSpeed * massFac * sticky * (e.jetT > 0 ? 1.25 : 1);
 
     e.jetCd = Math.max(0, e.jetCd - dt);
@@ -2455,11 +2524,11 @@
       }
     }
 
-    // well pull: sticky inertia so escaping feels earned
+    // well pull: light drag so escaping feels earned without a gear-shift
     if (pulled) {
-      e.vx *= 1 - 1.55 * dt;
-      e.vy *= 1 - 1.55 * dt;
-      G.wellSticky = 0.45;
+      e.vx *= 1 - 1.1 * dt;
+      e.vy *= 1 - 1.1 * dt;
+      G.wellSticky = 0.25;
     } else if (G.wellSticky > 0) {
       G.wellSticky = Math.max(0, G.wellSticky - dt);
     }
@@ -2544,7 +2613,7 @@
         G.progress = clamp(G.progress + PROG.signal, 0, 1);
         e.pickupT = 0.28;
         e.pickupPop = 0.16;
-        if (!G.reduceMotion) G.hitStop = 0.035;
+        // no hit-stop on gold — micro-freezes stacked into a sticky stutter
         G.shake = G.reduceMotion ? 0 : 2;
         G.flash = 0.18;
         AudioEngine.sfx("eat");
@@ -2962,34 +3031,70 @@
 
     el.btnQte.classList.toggle("ready", !!q.ready);
 
-    // capture light ring (lasso)
-    ctx.strokeStyle = q.ready ? "#E8C878" : "rgba(240,230,211,0.55)";
-    ctx.lineWidth = q.ready ? 3.5 : 2.5;
+    // capture light ring — MAIN ring = catch bound (WYSIWYG)
+    const catchR = q.catchR || R * QTE.catchIn;
+    const perfectR = q.perfectR || R * QTE.perfectIn;
+    const near = !!q.near;
+    let ox = 0;
+    let oy = 0;
+    if (near && !G.reduceMotion) {
+      ox = Math.sin(q.t * 42) * 1.4;
+      oy = Math.cos(q.t * 37) * 1.4;
+    }
+    // outer guide (decorative)
+    ctx.strokeStyle = "rgba(240,230,211,0.16)";
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(ex, ey, R, 0, Math.PI * 2);
     ctx.stroke();
-    // true catch zone (matches QTE.catchIn)
-    ctx.strokeStyle = q.ready ? "rgba(232,200,120,0.55)" : "rgba(240,230,211,0.22)";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 3]);
+    // catch ring: red near-miss / green ready / gold = perfect window
+    let ringCol = "rgba(240,230,211,0.55)";
+    let ringW = 2.5;
+    if (q.ready) {
+      if (q.perfectReady) {
+        ringCol = "#FFD166";
+        ringW = 4;
+      } else {
+        ringCol = "#6FCF97";
+        ringW = 3.5;
+      }
+    } else if (near) {
+      ringCol = "#C45C6A";
+      ringW = 3;
+    }
+    ctx.strokeStyle = ringCol;
+    ctx.lineWidth = ringW;
     ctx.beginPath();
-    ctx.arc(ex, ey, R * QTE.catchIn, 0, Math.PI * 2);
+    ctx.arc(ex + ox, ey + oy, catchR, 0, Math.PI * 2);
+    ctx.stroke();
+    // perfect core
+    ctx.strokeStyle = q.perfectReady ? "rgba(255,209,102,0.85)" : "rgba(212,168,75,0.28)";
+    ctx.lineWidth = q.perfectReady ? 2 : 1;
+    ctx.setLineDash(q.perfectReady ? [] : [2, 3]);
+    ctx.beginPath();
+    ctx.arc(ex, ey, perfectR, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
     if (q.ready) {
-      ctx.strokeStyle = "rgba(232,200,120,0.4)";
+      ctx.strokeStyle = q.perfectReady ? "rgba(255,209,102,0.55)" : "rgba(111,207,151,0.45)";
       ctx.lineWidth = 1.5;
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
-      ctx.arc(ex, ey, R + 6 + Math.sin(q.t * 8) * 2, 0, Math.PI * 2);
+      ctx.arc(ex, ey, catchR + 6 + Math.sin(q.t * 8) * 2, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
     }
 
     // line from earth to moon when close
     const d = Math.hypot(G.moon.x - ex, G.moon.y - ey);
-    if (d < R * 1.35) {
-      ctx.strokeStyle = q.ready ? "rgba(232,200,120,0.55)" : "rgba(240,230,211,0.25)";
+    if (d < catchR * 1.5) {
+      ctx.strokeStyle = q.ready
+        ? q.perfectReady
+          ? "rgba(255,209,102,0.65)"
+          : "rgba(111,207,151,0.55)"
+        : near
+          ? "rgba(196,92,106,0.45)"
+          : "rgba(240,230,211,0.25)";
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 2]);
       ctx.beginPath();
@@ -3549,13 +3654,7 @@
     loadBest();
     AudioEngine.enabled = Store.data.sound !== false;
 
-    // 英文字体套装：B Art Deco（Limelight + Josefin Sans）
-    let typePick = "B";
-    try {
-      typePick = localStorage.getItem("chase_moon_type_pick") || "B";
-    } catch (_) {}
-    document.body.setAttribute("data-type", typePick);
-
+    // 封面英文只保留 B · Art Deco（A/C/D 字体实验室已退役）
     G.reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const mqReduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (mqReduce.addEventListener) {

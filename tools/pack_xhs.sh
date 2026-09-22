@@ -11,7 +11,7 @@ mkdir -p "$OUT/assets/fonts" "$OUT/assets/sprites" "$OUT/assets/ui"
 cp index.html style.css game.js "$OUT/"
 cp assets/fonts/fonts.css "$OUT/assets/fonts/"
 # 只打包运行时实际使用的字体（B 套装 + Geist Mono + 思源宋标题）；
-# A/C/D 套装是字体实验室遗留，游戏内无切换入口，不打进包
+# A/C/D 字体实验室已退役（fonts.css/style.css 不再引用），不打进包
 cp assets/fonts/NotoSerifSC-700-sub.woff2 assets/fonts/GeistMono.woff2 \
    assets/fonts/Limelight.woff2 assets/fonts/JosefinSans-300.woff2 "$OUT/assets/fonts/"
 cp assets/sprites/earth.webp assets/sprites/moon.webp assets/sprites/moon-dark.webp \

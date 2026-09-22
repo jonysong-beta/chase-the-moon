@@ -249,8 +249,8 @@ html, body {
   left: 10px;
   bottom: calc(18px + var(--safe-b));
   bottom: calc(18px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
-  width: 88px;
-  height: 88px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   background: rgba(11, 21, 32, 0.35);
   border: 2px solid var(--cream);
@@ -730,92 +730,22 @@ html, body {
   top: 8%;
 }
 
-/* ── 四套英文气质：body[data-type="A"|"B"|"C"|"D"] ── */
-body[data-type="A"] .badge-word,
-body[data-type="A"] .cover-btn {
-  font-family: "Cinzel", "Times New Roman", serif;
-  font-weight: 600;
-}
-body[data-type="A"] .cover-sub {
-  font-family: "Bodoni Moda", "Times New Roman", serif;
-  font-weight: 600;
-  letter-spacing: 0.28em;
-}
-body[data-type="A"] .cover-ver,
-body[data-type="A"] .cover-btn {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-}
-body[data-type="A"] .cover-btn {
-  font-weight: 500;
-  letter-spacing: 0.12em;
-}
-
-body[data-type="B"] .badge-word {
+/* ── 封面英文套装 B · Art Deco（唯一；A/C/D 字体实验室已退役） ── */
+.badge-word {
   font-family: "Limelight", serif;
   letter-spacing: 0.16em;
 }
-body[data-type="B"] .cover-sub {
+.cover-sub {
   font-family: "Limelight", serif;
   letter-spacing: 0.3em;
 }
-body[data-type="B"] .cover-btn,
-body[data-type="B"] .cover-ver {
+.cover-btn,
+.cover-ver {
   font-family: "Josefin Sans", sans-serif;
   font-weight: 300;
   letter-spacing: 0.26em;
 }
-body[data-type="B"] .cover-title {
-  letter-spacing: 0.28em;
-}
-
-body[data-type="C"] .badge-word {
-  font-family: "Forum", serif;
-}
-body[data-type="C"] .cover-sub {
-  font-family: "Cormorant Garamond", serif;
-  font-weight: 600;
-  letter-spacing: 0.26em;
-}
-body[data-type="C"] .cover-btn,
-body[data-type="C"] .cover-ver {
-  font-family: "Forum", serif;
-  letter-spacing: 0.16em;
-}
-
-body[data-type="D"] .badge-word {
-  font-family: "Special Elite", cursive;
-  letter-spacing: 0.12em;
-}
-body[data-type="D"] .cover-sub {
-  font-family: "Special Elite", cursive;
-  letter-spacing: 0.18em;
-}
-body[data-type="D"] .cover-btn,
-body[data-type="D"] .cover-ver {
-  font-family: "Space Mono", monospace;
-  letter-spacing: 0.08em;
-}
-body[data-type="D"] .cover-title {
-  text-shadow: none;
-  letter-spacing: 0.12em;
-}
-
-/* 默认 B · Art Deco（与 body 默认 data-type 一致） */
-body:not([data-type]) .badge-word {
-  font-family: "Limelight", serif;
-  letter-spacing: 0.16em;
-}
-body:not([data-type]) .cover-sub {
-  font-family: "Limelight", serif;
-  letter-spacing: 0.3em;
-}
-body:not([data-type]) .cover-btn,
-body:not([data-type]) .cover-ver {
-  font-family: "Josefin Sans", sans-serif;
-  font-weight: 300;
-  letter-spacing: 0.26em;
-}
-body:not([data-type]) .cover-title {
+.cover-title {
   letter-spacing: 0.28em;
 }
 

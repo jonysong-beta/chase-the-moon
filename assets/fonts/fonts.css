@@ -1,4 +1,4 @@
-/* 自托管字体 — 复古太空印刷四套英文字体 + 思源宋体标题 */
+/* 自托管字体 — 运行时只保留 B 套装 + Geist Mono + 思源宋标题 */
 
 /* ── 中文标题 ── */
 @font-face {
@@ -9,7 +9,7 @@
   src: url("NotoSerifSC-700-sub.woff2") format("woff2");
 }
 
-/* ── Kimi 遥测 mono（HUD / 解码 / 数据行） ── */
+/* ── Kimi 遥测 mono（HUD / 数据行） ── */
 @font-face {
   font-family: "Geist Mono";
   font-style: normal;
@@ -18,37 +18,7 @@
   src: url("GeistMono.woff2") format("woff2");
 }
 
-/* ── A · 罗马铭文 + 新迪多 ── */
-@font-face {
-  font-family: "Cinzel";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("Cinzel-600.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Bodoni Moda";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("BodoniModa-600.woff2") format("woff2");
-}
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("IBMPlexMono-400.woff2") format("woff2");
-}
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("IBMPlexMono-500.woff2") format("woff2");
-}
-
-/* ── B · Art Deco ── */
+/* ── B · Art Deco（封面唯一英文套装） ── */
 @font-face {
   font-family: "Limelight";
   font-style: normal;
@@ -62,43 +32,4 @@
   font-weight: 300;
   font-display: swap;
   src: url("JosefinSans-300.woff2") format("woff2");
-}
-
-/* ── C · 古典期刊 ── */
-@font-face {
-  font-family: "Forum";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("Forum.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Cormorant Garamond";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("CormorantGaramond-600.woff2") format("woff2");
-}
-
-/* ── D · 任务日志 ── */
-@font-face {
-  font-family: "Special Elite";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("SpecialElite.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Space Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("SpaceMono-400.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Space Mono";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("SpaceMono-700.woff2") format("woff2");
 }
