@@ -545,41 +545,79 @@
     ensure() {
       if (this.ctx) return;
       const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      this.ctx = new AC();
-      this.master = this.ctx.createGain();
-      this.master.gain.value = this.enabled ? 0.9 : 0;
-      // 母线压限：糊住瞬态峰值，手机喇叭不破
-      this.comp = this.ctx.createDynamicsCompressor();
-      this.comp.threshold.value = -16;
-      this.comp.knee.value = 12;
-      this.comp.ratio.value = 4;
-      this.comp.attack.value = 0.003;
-      this.comp.release.value = 0.22;
-      this.master.connect(this.comp);
-      this.comp.connect(this.ctx.destination);
-      // 音乐总线带通：70Hz 高通砍掉手机 reproduces 不了的超低（55Hz 底鼓/73Hz 贝斯
-      // 会逼喇叭过载破音），6.5kHz 低通磨掉方波毛刺
-      this.musicHP = this.ctx.createBiquadFilter();
-      this.musicHP.type = "highpass";
-      this.musicHP.frequency.value = 70;
-      this.musicLP = this.ctx.createBiquadFilter();
-      this.musicLP.type = "lowpass";
-      this.musicLP.frequency.value = 6500;
-      this.musicGain = this.ctx.createGain();
-      this.musicGain.gain.value = 0.34;
-      this.musicGain.connect(this.musicHP);
-      this.musicHP.connect(this.musicLP);
-      this.musicLP.connect(this.master);
-      this.sfxGain = this.ctx.createGain();
-      this.sfxGain.gain.value = 0.45;
-      this.sfxGain.connect(this.master);
+      if (!AC) {
+        this._dead = true;
+        return;
+      }
+      try {
+        this.ctx = new AC();
+        this.master = this.ctx.createGain();
+        this.master.gain.value = this.enabled ? 0.9 : 0;
+        // 母线压限：糊住瞬态峰值，手机喇叭不破
+        this.comp = this.ctx.createDynamicsCompressor();
+        this.comp.threshold.value = -16;
+        this.comp.knee.value = 12;
+        this.comp.ratio.value = 4;
+        this.comp.attack.value = 0.003;
+        this.comp.release.value = 0.22;
+        this.master.connect(this.comp);
+        this.comp.connect(this.ctx.destination);
+        // 音乐总线带通：70Hz 高通砍掉手机喇叭重现不了的超低（55Hz 底鼓/73Hz 贝斯
+        // 会逼喇叭过载破音），6.5kHz 低通磨掉方波毛刺
+        this.musicHP = this.ctx.createBiquadFilter();
+        this.musicHP.type = "highpass";
+        this.musicHP.frequency.value = 70;
+        this.musicLP = this.ctx.createBiquadFilter();
+        this.musicLP.type = "lowpass";
+        this.musicLP.frequency.value = 6500;
+        this.musicGain = this.ctx.createGain();
+        this.musicGain.gain.value = 0.34;
+        this.musicGain.connect(this.musicHP);
+        this.musicHP.connect(this.musicLP);
+        this.musicLP.connect(this.master);
+        this.sfxGain = this.ctx.createGain();
+        this.sfxGain.gain.value = 0.45;
+        this.sfxGain.connect(this.master);
+      } catch (_) {
+        this._dead = true;
+        this.ctx = null;
+        this.master = null;
+      }
+    },
+
+    // 只在用户手势里创建 AudioContext（非手势创建会被容器永久 suspended）
+    unlockFromGesture() {
+      if (this._dead) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) {
+        this._dead = true;
+        return;
+      }
+      if (!this.ctx) this.ensure();
+      if (!this.ctx) return;
+      try {
+        if (this.ctx.state !== "running") {
+          const p = this.ctx.resume();
+          if (p && p.catch) p.catch(function () {});
+        }
+        // 静默一帧，强制打通输出（部分 WebView 不这么做就一直哑）
+        const buf = this.ctx.createBuffer(1, 1, 22050);
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(this.ctx.destination);
+        src.start(0);
+      } catch (_) {}
     },
 
     resume() {
-      this.ensure();
-      // iOS 来电/Siri 打断后 ctx 会停在 "interrupted"，不只 "suspended"
-      if (this.ctx && this.ctx.state !== "running") this.ctx.resume();
+      // 仅恢复已存在的 ctx；绝不在非手势路径 ensure()/new AudioContext()
+      if (!this.ctx) return;
+      if (this.ctx.state !== "running") {
+        try {
+          const p = this.ctx.resume();
+          if (p && p.catch) p.catch(function () {});
+        } catch (_) {}
+      }
     },
 
     setEnabled(on) {
@@ -907,25 +945,22 @@
       this._timer = requestAnimationFrame(tick);
     },
 
-    startMusic(mode) {
-      this.ensure();
-      if (!this.ctx || !this.enabled) {
-        this._mode = mode;
-        return;
-      }
-      if (this._mode === mode && this._timer) return;
-
-      this.stopMusic();
-      this._mode = mode;
-      this._startSynth(mode);
+    // BGM：<audio> data URI（base64 在 assets/audio/bgm-data.js）
+    _bgmEl: null,
+    _bgmSrc: "",
+    BGM_KEY: {
+      title: "title",
+      intro: "title",
+      chase: "chase",
+      discover: "chase",
+      qte: "chase",
+      ending: "ending",
     },
-
-    stopMusic() {
+    _stopSynth() {
       if (this._timer) {
         cancelAnimationFrame(this._timer);
         this._timer = null;
       }
-      this._mode = "off";
       const bus = this._bus;
       if (bus && this.ctx) {
         bus.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.05);
@@ -934,6 +969,50 @@
         }, 400);
       }
       this._bus = null;
+    },
+    _stopFileBgm() {
+      if (this._bgmEl) {
+        try { this._bgmEl.pause(); } catch (_) {}
+      }
+    },
+    _playFileBgm(mode) {
+      const key = this.BGM_KEY[mode];
+      const table = window.BGM_DATA || {};
+      const src = key ? table[key] : null;
+      if (!src || !this.enabled) return;
+      if (!this._bgmEl) {
+        this._bgmEl = new Audio();
+        this._bgmEl.loop = true;
+        this._bgmEl.preload = "auto";
+        this._bgmEl.volume = 0.55;
+      }
+      const el = this._bgmEl;
+      if (this._bgmSrc !== src) {
+        el.src = src;
+        this._bgmSrc = src;
+      }
+      el.volume = 0.55;
+      const p = el.play();
+      if (p && p.catch) p.catch(function () {});
+    },
+
+    startMusic(mode) {
+      // Web Audio 已验证可出声（SFX）；data URI <audio> 被 CSP 拦 → BGM 走合成
+      this.ensure();
+      if (!this.ctx || !this.enabled) {
+        this._mode = mode;
+        return;
+      }
+      if (this._mode === mode && this._timer) return;
+      this._stopSynth();
+      this._mode = mode;
+      this._startSynth(mode);
+    },
+
+    stopMusic() {
+      this._mode = "off";
+      this._stopSynth();
+      this._stopFileBgm();
     },
   };
 
@@ -3604,7 +3683,14 @@
 
     el.btnSound.addEventListener("click", (e) => {
       e.stopPropagation();
-      AudioEngine.resume();
+      AudioEngine.unlockFromGesture();
+      if (!window.AudioContext && !window.webkitAudioContext) {
+        showToast("此环境无 Web Audio");
+      } else if (!AudioEngine.ctx) {
+        showToast("音频初始化失败");
+      } else if (AudioEngine.ctx.state !== "running") {
+        showToast("音频未解锁 · " + AudioEngine.ctx.state);
+      }
       AudioEngine.setEnabled(!AudioEngine.enabled);
       Store.data.sound = AudioEngine.enabled;
       Store.save();
@@ -3653,6 +3739,24 @@
   function boot() {
     loadBest();
     AudioEngine.enabled = Store.data.sound !== false;
+
+    // 小红书容器：AudioContext 只能在用户手势里创建，否则永久 suspended
+    const unlock = () => {
+      AudioEngine.unlockFromGesture();
+      if (AudioEngine.ctx && AudioEngine.ctx.state === "running") {
+        document.removeEventListener("pointerdown", unlock);
+        document.removeEventListener("touchstart", unlock);
+        document.removeEventListener("click", unlock);
+        // 解锁后把当前模式 BGM 起起来
+        if (AudioEngine.enabled && G.state === "title") AudioEngine.startMusic("title");
+        else if (AudioEngine.enabled && AudioEngine._mode && AudioEngine._mode !== "off") {
+          AudioEngine.startMusic(AudioEngine._mode);
+        }
+      }
+    };
+    document.addEventListener("pointerdown", unlock);
+    document.addEventListener("touchstart", unlock, { passive: true });
+    document.addEventListener("click", unlock);
 
     // 封面英文只保留 B · Art Deco（A/C/D 字体实验室已退役）
     G.reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

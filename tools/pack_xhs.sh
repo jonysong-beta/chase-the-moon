@@ -19,6 +19,7 @@ cp assets/sprites/earth.webp assets/sprites/moon.webp assets/sprites/moon-dark.w
 # cover.webp 为 legacy 平海报，运行时已无引用，不打进包
 cp assets/ui/cover-bg.webp assets/ui/cover-moon.webp \
    assets/ui/menu.webp "$OUT/assets/ui/"
+# BGM/SFX = Web Audio 合成（data URI <audio> 被 CSP 拦；上传白名单无音频扩展名）
 
 # 卫生检查：禁止文件类型 / 禁用 API 残留
 echo "── 白名单外文件："
