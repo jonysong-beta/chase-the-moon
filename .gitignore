@@ -10,3 +10,7 @@ dist/
 music/raw/
 music/pack/
 .skill/
+
+# 音频实验稿/生成物（BGM 走 Web Audio 合成，不入库）
+assets/audio/
+music/src/assets/

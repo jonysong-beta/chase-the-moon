@@ -8,12 +8,17 @@
 **规范路径：** `/Users/jonysong/Work/Products/chase-the-moon`  
 （已从 MiMo 会话临时目录迁出；后续所有改动以此为准。）
 
-## 当前状态（2026-09-22 · 新会话先读这里）
+## 当前状态（2026-09-22 晚 · 新会话先读这里）
 
-- **版本基线**：git `v1.0.0` + 后续打磨批次（HEAD 已过官方 minitool-zip-builder 1.6.0 校验）。无远程同步要求，本地可有 origin。
-- **已完成（含 09-21 深化）**：小红书合规（全合成 BGM、分享改长按复制）；Kimi 轻融合（Geist Mono + 深空蓝场，品牌蓝不进游戏）；全局金色圆月（blood 例外用暗月）；封面/面板底图管线；封面 DOM keyline；今日竞速（用时 + PB + 今日最佳 + HUD 计时器）；任务面板仪场 + **难度刻度盘（仅已解锁档）+ 竞速开关**；四档叙事名与逐级解锁；局内 06-stipple + 浮动摇杆；加载性能（包体 772K，moon-dark 已进包）；声音开关 LED 反馈 + 11 处体验隐患；官方规范（zip 根即 index.html、ES2017、CSS 基线+增强）；**工程收尾批次（09-22）**：DESIGN/注释与实现对齐、type kits A/C/D 退役只留 B、board 存档清洗 + save 失败提示、noise 共用 buffer、摇杆归位不缓存坐标。
-- **待真机验证**：竞速通关后的结算三行（用时/纪录/今日最佳）与新纪录标记；小红书容器内包内 woff2 字体；整体手感；06-stipple 局内视觉 + 浮动摇杆手感；**Chrome 61 / Android 8.1 旧内核未实测**。
-- **未做（用户暂未拍板）**：竞速 streak 连续挑战；仓库大文件瘦身（template/ / design-refs / bgm wav / generated-*.png 仍全量入库）。
+- **版本**：git tag **`v1.0.1`** + HEAD `a49a239`（音频修复）已推 `origin`。交付包 `dist/chase-the-moon.zip`（**772K**，audit PASS 17 文件）。
+- **产品完成**：四档难度+竞速；月之暗面（blood+暗月）；QTE 体验包（真判定环三态/连套升级/顿帧 juice）；**MoBA 摇杆**（96px 盘、t^1.1、steer 24、无双死区）；井黏滞软化；金标无 hit-stop；QTE 与追逐同族速度跟踪；工程收尾（字体只留 B、board 清洗、save 提示、noise 缓存）。
+- **音频结论（小红书容器实测，勿再走弯路）**：
+  1. **Web Audio 可用**，但 **`AudioContext` 只能在用户手势里 `new`**——否则永久 `suspended`（按键有声 = 已通）。
+  2. 上传白名单**无音频扩展名**（jpg/css/gif/svg/png/js/jpeg/json/html/woff2/webp/woff）→ 不能打 mp3/wav。
+  3. `data:`/`blob:` 的 `<audio>` 被 CSP 拦 → base64 方案无效。
+  4. **唯一路径 = Web Audio 合成 BGM + SFX**（`unlockFromGesture` + `AudioEngine.patterns`）。
+- **待真机/容器验证**：合成 BGM 音色与音量；竞速结算三行；Chrome 61 旧内核；06-stipple/浮动摇杆手感终验。
+- **未做**：竞速 streak；仓库大文件瘦身（template/ / design-refs / bgm 母带仍入库）。
 
 ## 项目根目录
 
