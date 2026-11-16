@@ -564,6 +564,8 @@ V2 首版不包含付费内购、装备随机词条、体力限制、强制签�
 - **不拆标准挑战与自由航线**：用户明确认为成长章节有限，公平性不需要通过两套规则解决。每日和无尽都携带当前永久成长，使用一套规则直接排名，不另建标准能力榜或自由成长榜。
 - **分享属于玩法延伸**：成长里程碑、每日航线、无尽纪录与冥想场景都可分享，但分享卡的视觉与落地体验必须属于同一产品，不做独立的通用模板。
 
+**分享实施约定（2026-11-17）：** 每日邀请只携带 `route/date/pool/version`；接受时重新计算当天同池版本，日期或版本不符不得混入今日航道，也不得因此解锁关卡。无尽与冥想分别使用 `view=endless`、`view=meditation`。成绩海报保持 540×860，另从真实海报生成 500×400 的微信转发缩略图；导出失败按官方文档回退为游戏画面。调用 `wx.shareAppMessage` 只表示拉起转发，不宣称玩家已经分享成功，也不发放分享奖励。启动与前台参数只在封面/工作台接收，不能用旧分享打断正在进行的游戏。接口依据：[主动转发](https://developers.weixin.qq.com/minigame/dev/api/share/wx.shareAppMessage.html)、[Canvas 导出](https://developers.weixin.qq.com/minigame/dev/api/render/canvas/Canvas.toTempFilePath.html)、[启动参数](https://developers.weixin.qq.com/minigame/dev/api/base/app/life-cycle/wx.getLaunchOptionsSync.html)。
+
 ### F4. 统一美术核心
 
 用户确认当前产品的视觉核心是：**宇宙航行、航线、工作台、复古未来风格的画面**。类别身份证继续使用“太空时代印刷海报 × 竖屏纵深街机”，其中“复古未来”是明确的视觉语言，不再只停留在族谱描述。

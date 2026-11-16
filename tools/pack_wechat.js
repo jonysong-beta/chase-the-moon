@@ -6,7 +6,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist', 'wechat');
-const modules = ['core', 'ui', 'input', 'platform', 'runtime', 'rewarded-ad', 'campaign', 'progression', 'daily', 'endless'];
+const modules = ['core', 'ui', 'input', 'platform', 'runtime', 'rewarded-ad', 'campaign', 'progression', 'daily', 'endless', 'challenge', 'share'];
 const sourceFiles = ['game.js', 'game.json', 'config.js'].concat(modules.map(name => 'src/' + name + '.js'));
 const assets = [
   'ui/cover-bg.webp', 'ui/cover-moon.webp', 'ui/menu.webp',

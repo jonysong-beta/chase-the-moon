@@ -290,3 +290,42 @@ test('decline while ad prepares saves once, ignores completion and frees control
   assert.equal(app.game.getView().revive.used, false);
   app.destroy();
 });
+
+
+test('native share from the real daily brief carries the current route and opens WeChat', async () => {
+  const fake = fakeWx();
+  fake.wx.getStorageSync = () => JSON.stringify({ campaignV2: { completed: ['L01', 'L02', 'L03', 'L04'] },
+    growthV2: { abilities: { jet: 1 }, grants: { 'L04:jet': true } } });
+  const shared = [];
+  fake.wx.shareAppMessage = settings => shared.push(settings);
+  const app = await start(fake.wx, { debug: true });
+  app.handleAction('openMenu'); app.handleAction('openDaily');
+  const expected = app.game.getShareContent();
+  const result = await app.handleAction('shareCurrent');
+  assert.equal(result.status, 'opened');
+  assert.equal(shared.length, 1);
+  assert.equal(shared[0].query, expected.query);
+  assert.match(shared[0].query, /^route=daily&date=\d{4}-\d{2}-\d{2}&pool=A&version=v2-a1$/);
+  assert.match(app.getSocialState().share.message, /已打开/);
+  app.destroy();
+});
+
+test('launch and foreground share parameters reach the validated destination only out of a run', async () => {
+  const launch = fakeWx();
+  launch.wx.getLaunchOptionsSync = () => ({ query: { view: 'meditation' } });
+  const meditation = await start(launch.wx, { debug: true });
+  assert.equal(meditation.game.getView().screen, 'meditation');
+  assert.equal(await meditation.handleAction('shareCurrent') && true, true);
+  meditation.destroy();
+
+  const fake = fakeWx();
+  fake.wx.getLaunchOptionsSync = () => ({ query: { route: 'daily', date: '2026-11-16', pool: 'A', version: 'v2-a1' } });
+  const app = await start(fake.wx, { debug: true });
+  assert.match(app.game.getView().toast, /已更新/);
+  assert.equal(app.game.getView().screen, 'cover');
+  app.game.action('openMenu'); app.game.action('openMeditation');
+  fake.emit('Hide');
+  fake.emit('Show', { query: { view: 'endless' } });
+  assert.equal(app.game.getView().screen, 'meditation');
+  app.destroy();
+});

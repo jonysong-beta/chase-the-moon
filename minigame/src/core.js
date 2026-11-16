@@ -6,6 +6,7 @@ const Campaign = require('./campaign');
 const Progression = require('./progression');
 const Daily = require('./daily');
 const Endless = require('./endless');
+const { encodeShareQuery, resolveShareQuery } = require('./challenge');
 function createGame(options) {
   options = options || {};
   const ctx = options.ctx;
@@ -1886,6 +1887,40 @@ function createGame(options) {
     setState("play");
   }
 
+  function getShareContent() {
+    if (G.state === 'meditation') return { mode: 'meditation', title: '星空冥想 · 在星际之间，停留片刻', query: 'view=meditation', score: null, subtitle: 'THE QUIET BETWEEN STARS' };
+    if (G.state === 'dailyBrief') {
+      const daily = v2View().daily;
+      return { mode: 'daily', title: '今日航线 · 来飞同一条 150 秒航道', query: encodeShareQuery(Object.assign({ mode: 'daily' }, daily)), score: daily.bestScore,
+        subtitle: daily.date + ' / ' + daily.pool, date: daily.date, pool: daily.pool, version: daily.version };
+    }
+    if (!isV2() || !G.v2.result) return null;
+    const r = G.v2.result;
+    if (G.mode === 'daily') return { mode: 'daily', title: '我在今日航线获得 ' + r.score + ' 分，来飞同一条航线',
+      query: encodeShareQuery(Object.assign({ mode: 'daily' }, r)), score: r.score, subtitle: r.date + ' / ' + r.pool, date: r.date, pool: r.pool, version: r.version };
+    if (G.mode === 'endless') return { mode: 'endless', title: '我在无尽追寻中坚持了 ' + fmtTime(r.time) + '，继续向前',
+      query: 'view=endless', score: r.time, subtitle: 'ENDLESS PURSUIT / SURVIVAL' };
+    return { mode: 'campaign', title: r.completed ? '逐月计划 · ' + G.v2.level.name + '，航程已点亮' : '逐月计划 · 继续追回月亮',
+      query: '', score: r.time, subtitle: G.v2.levelId + ' / ' + G.v2.level.name };
+  }
+
+  function receiveShare(query) {
+    const destination = resolveShareQuery(query, clock());
+    if (destination.status === 'none') return false;
+    if (destination.status === 'daily' && Progression.dailyPoolUnlocked(Store.data, destination.pool)) {
+      selectedDailyPool = destination.pool; setState('dailyBrief'); return true;
+    }
+    if (destination.status === 'meditation') {
+      G.meditation = { duration: 300, elapsed: 0, running: false, completed: false };
+      setState('meditation'); return true;
+    }
+    if (destination.status === 'endless' && Progression.dailyUnlocked(Store.data)) return beginV2('endless');
+    if (destination.status === 'expired') showToast('分享的航线已更新，请从今日航线出发');
+    else if (destination.status === 'invalid') showToast('这条分享无法打开，请从工作台出发');
+    else showToast('完成 L04 后，即可接受这条航行邀请');
+    return true;
+  }
+
   function shareText() {
     if (isV2()) {
       const r = v2ResultView();
@@ -1911,7 +1946,8 @@ function createGame(options) {
   /** Full-screen share card — no download (XHS container bans a[download]) */
   function drawShareCard(g, w, h) {
     if (!g) return;
-    if (isV2()) { drawV2Share(g, w || 540, h || 860); return; }
+    if (isV2() && G.v2 && G.v2.result) { drawV2Share(g, w || 540, h || 860); return; }
+    if (G.state === 'dailyBrief' || G.state === 'meditation') { drawShareInvitation(g, w || 540, h || 860); return; }
     w = w || 540; h = h || 860;
     g.save();
     g.scale(w / 540, h / 860);
@@ -3362,6 +3398,7 @@ function createGame(options) {
     }
     if (pauseReasons.size) return false;
     const screen = G.state;
+    if (name === 'receiveShare' && (screen === 'title' || screen === 'cover')) return receiveShare(payload);
     if (name === 'openMeditation' && screen === 'title') {
       G.meditation = { duration: 300, elapsed: 0, running: false, completed: false };
       AudioEngine.unlockFromGesture(); AudioEngine.sfx('click'); setState('meditation'); return true;
@@ -3597,6 +3634,50 @@ function createGame(options) {
       result: v2ResultView()
     };
   }
+  function drawShareInvitation(g, w, h) {
+    const content = getShareContent(); if (!content) return;
+    const meditation = content.mode === 'meditation';
+    g.save(); g.scale(w / 540, h / 860);
+    g.fillStyle = '#E8DCC8'; g.fillRect(0, 0, 540, 860);
+    g.fillStyle = meditation ? '#10263A' : '#0C1D30'; g.fillRect(18, 18, 504, 824);
+    for (let i = 0; i < 340; i++) {
+      g.fillStyle = i % 5 ? 'rgba(240,230,211,.055)' : 'rgba(212,168,75,.18)';
+      g.fillRect(24 + (i * 83 % 487), 24 + (i * 137 % 807), 1.5, 1.5);
+    }
+    g.strokeStyle = '#D4A84B'; g.lineWidth = 1.5; g.strokeRect(32, 32, 476, 796);
+    function write(value, x, y, size, color, align, maxWidth, weight, family) {
+      g.fillStyle = color; g.font = (weight || '400') + ' ' + size + 'px ' + (family || monoFamily);
+      g.textAlign = align || 'left'; g.textBaseline = 'alphabetic'; g.fillText(String(value), x, y, maxWidth || 440);
+    }
+    write('CHASE THE MOON', 50, 70, 18, '#E8C878', 'left', 320, '400', displayFamily);
+    write(meditation ? 'QUIET ORBIT' : 'DAILY ROUTE', 490, 70, 13, '#D4A84B', 'right', 180);
+    g.fillRect(50, 92, 440, 1);
+    write(meditation ? '星空冥想' : '今日航线', 50, 157, 43, '#F0E6D3', 'left', 430, '700', titleFamily);
+    write(meditation ? 'THE QUIET BETWEEN STARS' : 'THREE MOMENTS / ONE ROUTE', 52, 191, 16, '#E8C878', 'left', 430, '400', displayFamily);
+    if (meditation) {
+      g.beginPath(); g.arc(270, 410, 181, 0, Math.PI * 2); g.strokeStyle = '#D4A84B'; g.lineWidth = 2; g.stroke();
+      g.beginPath(); g.arc(270, 410, 164, 0, Math.PI * 2); g.strokeStyle = 'rgba(212,168,75,.35)'; g.stroke();
+      g.beginPath(); g.ellipse(270, 422, 202, 74, -.28, 0, Math.PI * 2); g.strokeStyle = '#3D8B7A'; g.lineWidth = 10; g.globalAlpha = .5; g.stroke(); g.globalAlpha = 1;
+      g.beginPath(); g.ellipse(270, 422, 202, 74, -.28, 0, Math.PI * 2); g.strokeStyle = '#D4A84B'; g.lineWidth = 1; g.stroke();
+      if (ART.moon) g.drawImage(ART.moon, 283, 255, 139, 139);
+      if (ART.earth) g.drawImage(ART.earth, 140, 416, 136, 136);
+      [[110, 338], [167, 276], [220, 329]].forEach((point, index, points) => {
+        if (index) { g.beginPath(); g.moveTo(points[index - 1][0], points[index - 1][1]); g.lineTo(point[0], point[1]); g.strokeStyle = '#C5B89A'; g.lineWidth = .8; g.stroke(); }
+        g.fillStyle = '#E8C878'; g.fillRect(point[0] - 2, point[1] - 2, 4, 4);
+      });
+      write('不必追上风，也不必抵达哪里', 270, 635, 24, '#F0E6D3', 'center', 430, '400', titleFamily);
+    } else {
+      if (ART.dailyScenes) g.drawImage(ART.dailyScenes, 51, 223, 438, 394);
+      else { g.strokeRect(51, 223, 438, 394); if (ART.earth) g.drawImage(ART.earth, 85, 454, 105, 105); if (ART.moon) g.drawImage(ART.moon, 363, 251, 82, 82); }
+      write('150', 48, 731, 112, '#E8C878', 'left', 265, '700');
+      write('SECONDS', 332, 676, 19, '#F0E6D3');
+      write('同一条航线，等待你的启航。', 333, 710, 17, '#F0E6D3', 'left', 166, '400', titleFamily);
+    }
+    g.fillStyle = meditation ? '#3D8B7A' : '#D97B3A'; g.fillRect(50, 764, 440, 7);
+    write(meditation ? 'NO SCORE / NO HURRY / JUST ORBIT' : content.subtitle, 50, 807, 13, '#C5B89A', 'left', 290);
+    write('SOL III / AD LUNAM', 490, 807, 12, '#C5B89A', 'right', 180);
+    g.restore();
+  }
   function drawV2Share(g, w, h) {
     const r = v2ResultView(); if (!r) return;
     const daily = r.kind === 'daily';
@@ -3711,7 +3792,7 @@ function createGame(options) {
   AudioEngine.enabled = Store.data.sound !== false;
   resetRun();
   setState('cover');
-  const api = { update, render, getView, setInput, pressJet, pressCapture, resetInput, pause, resume, action, getReviveOffer, completeRevive, declineRevive, drawShareCard };
+  const api = { update, render, getView, setInput, pressJet, pressCapture, resetInput, pause, resume, action, getReviveOffer, completeRevive, declineRevive, drawShareCard, getShareContent };
   if (options.debug === true) {
     api.debug = {
       state() { return JSON.parse(JSON.stringify(Object.assign({}, G, { input: Input, pending, finalized, assisted }))); },

@@ -6,6 +6,7 @@ const createUI = require('./ui');
 const { SHARE_CARD_RECT } = require('./ui');
 const { createInput } = require('./input');
 const createRewardedAd = require('./rewarded-ad');
+const { createSharing } = require('./share');
 
 async function start(wx, config) {
   config = config || {};
@@ -40,6 +41,16 @@ async function start(wx, config) {
     createCanvas: platform.createCanvas, createAudioContext: platform.createAudioContext,
     now: Date.now, reviveEnabled: ads.isConfigured(), debug: config.debug === true
   });
+  const sharing = createSharing({ wx, createCanvas: platform.createCanvas, fonts: platform.fonts });
+  function receiveLaunch(query) {
+    if (destroyed || ['title', 'cover'].indexOf(game.getView().screen) < 0 || !query) return false;
+    return game.action('receiveShare', query);
+  }
+  async function shareCurrent() {
+    if (destroyed || !sharing.available || !game.getShareContent()) return { status: 'unavailable' };
+    await sharing.prepare(game);
+    return destroyed ? { status: 'unavailable' } : sharing.share(game);
+  }
   function resetFrameTime() { lastTime = null; }
   function resetInput() { if (input) input.reset(); else game.resetInput(); }
   function statusMessage(result) {
@@ -81,6 +92,7 @@ async function start(wx, config) {
   function handleAction(name, payload) {
     if (destroyed) return false;
     if (ui && ui.handleAction(name, payload)) return true;
+    if (name === 'shareCurrent') return shareCurrent();
     if (name === 'watchAd') return watchAd(payload);
     const offer = game.getReviveOffer();
     if (offer.eligible && (name === 'declineRevive' || name === 'retry' || name === 'home')) {
@@ -96,6 +108,7 @@ async function start(wx, config) {
     const changed = game.action(name, payload);
     if (game.getView().screen !== before) {
       resetInput(); resetFrameTime(); adMessage = '';
+      if (name === 'openCard') sharing.prepare(game);
     }
     return changed;
   }
@@ -110,7 +123,10 @@ async function start(wx, config) {
   bind('onTouchEnd', 'offTouchEnd', event => input.end(event));
   bind('onTouchCancel', 'offTouchCancel', event => input.cancel(event));
   bind('onHide', 'offHide', () => { game.pause('background'); resetInput(); resetFrameTime(); });
-  bind('onShow', 'offShow', () => { game.resume('background'); resetInput(); resetFrameTime(); });
+  bind('onShow', 'offShow', event => { game.resume('background'); receiveLaunch(event && event.query); resetInput(); resetFrameTime(); });
+  if (typeof wx.getLaunchOptionsSync === 'function') {
+    try { const launch = wx.getLaunchOptionsSync(); receiveLaunch(launch && launch.query); } catch (_) {}
+  }
   const removeResize = platform.onResize(() => { resetInput(); resetFrameTime(); });
   function draw(dt) {
     const view = game.getView();
@@ -127,7 +143,8 @@ async function start(wx, config) {
         game.drawShareCard(platform.ctx, rect.w, rect.h);
         platform.ctx.restore();
       }
-      ui.drawOverlay(view, { stick: input.getStick(), adBusy, adMessage });
+      ui.drawOverlay(view, { stick: input.getStick(), adBusy, adMessage,
+        shareAvailable: sharing.available, shareMessage: sharing.getState().message });
     } finally { platform.endFrame(); }
   }
   function frame(timestamp) {
@@ -155,6 +172,7 @@ async function start(wx, config) {
   return {
     game, ui, input, platform, handleAction,
     getAdState() { return { busy: adBusy, message: adMessage, configured: ads.isConfigured(), events: events.map(entry => Object.assign({}, entry)) }; },
+    getSocialState() { return { share: sharing.getState(), available: sharing.available }; },
     destroy
   };
 }

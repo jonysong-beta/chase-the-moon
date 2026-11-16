@@ -15,6 +15,10 @@ const wxMock = {
   createCanvas() {
     const canvas = document.createElement('canvas');
     if (!screenCanvas) { screenCanvas = canvas; surface.insertBefore(canvas, surface.firstChild); }
+    canvas.toTempFilePath = settings => {
+      try { settings.success({ tempFilePath: canvas.toDataURL('image/png') }); }
+      catch (error) { if (settings.fail) settings.fail(error); }
+    };
     return canvas;
   },
   createImage() {
@@ -33,6 +37,11 @@ const wxMock = {
   getSystemInfoSync() { return this.getWindowInfo(); },
   getStorageSync(key) { return localStorage.getItem('wechat-preview:' + key) || ''; },
   setStorageSync(key, value) { localStorage.setItem('wechat-preview:' + key, value); },
+  shareAppMessage(settings) {
+    window.__moonLastShare = { title: settings.title, query: settings.query, imageUrl: settings.imageUrl || '' };
+    status.textContent = '预览已调用分享 · 非真实微信转发';
+  },
+  getLaunchOptionsSync() { return { query: window.__moonLaunchQuery || {} }; },
   loadFont(path) {
     const family = 'MoonPreview' + fontLoads.length;
     const face = new FontFace(family, 'url(/dist/wechat/' + path + ')');

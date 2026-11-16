@@ -412,7 +412,7 @@ function createUI(options) {
     text('LUNA', 231, y + 91, 5.4, COLOR.dim, 'center');
     ctx.restore();
   }
-  function drawDaily(view) {
+  function drawDaily(view, overlay) {
     const daily = view.v2.daily || {};
     const scenes = assets.dailyScenes && assets.dailyScenes.width ? assets.dailyScenes : null;
     const offset = scenes ? 18 : 0;
@@ -445,15 +445,20 @@ function createUI(options) {
       text((daily.remainingRewards || 0) > 0 ? '今日可获成长 ' + daily.remainingRewards + ' 点' : '今日成长奖励已领取',
         16, 371 + offset, 7.2, COLOR.dim);
     } else text('完成 L04 · 第一脉冲后开放', 16, 352 + offset, 9.2, COLOR.bright);
+    if (daily.unlocked && overlay.shareAvailable) button('邀请好友 · 同一条航线', 'shareCurrent', 20, 382, 230, 27, { size: 9 });
     button(daily.unlocked ? (bestScore === null ? '开始每日航线' : '再次航行') : '尚未开放',
       'startDaily', 20, 420, 230, 40, { primary: true, size: 12, disabled: !daily.unlocked });
   }
-  function drawMeditation(view) {
+  function drawMeditation(view, overlay) {
     const m = view.meditation || { duration: 300, elapsed: 0, remaining: 300, running: false, completed: false, visualTime: 0 };
     const t = Number(m.visualTime) || 0, cx = 135, cy = 200;
     rect(0, 0, W, H, '#10263A');
     text('← 返回工作台', 16, 19, 8, COLOR.dim, 'left', 'body');
     touchRegion('backToHub', null, 10, 5, 86, 28);
+    if (!m.running && overlay.shareAvailable) {
+      text('分享此刻 →', 254, 19, 8, COLOR.dim, 'right', 'body');
+      touchRegion('shareCurrent', null, 202, 3, 58, 30);
+    }
     text('QUIET ORBIT / LOW SIGNAL', 16, 40, 6.3, COLOR.gold);
     text('星空冥想', 16, 62, 24, COLOR.cream, 'left', 'title', '700');
     text('不必追上风，也不必抵达哪里', 16, 80, 7.2, COLOR.dim);
@@ -707,9 +712,16 @@ function createUI(options) {
     lines(board.dailyText, 135, 388, 226, 8.5, COLOR.dim, 13, 'center', 'body', 3);
     button('返回结算', 'backFromBoard', 22, 435, 226, 32);
   }
-  function drawCard(view) {
+  function drawCard(view, overlay) {
     // The entry point draws core.drawShareCard into SHARE_CARD_RECT immediately
     // before this overlay. Keep this rectangle transparent and full-resolution.
+    if (view.v2 && view.v2.mode !== 'classic') {
+      text('航行海报 · 分享不产生奖励', 135, 356, 8, COLOR.dim, 'center', 'body');
+      lines(overlay.shareMessage || (overlay.shareAvailable ? '与同航的人，分享这一刻' : '此环境可系统截屏分享'), 135, 376, 226, 8.2, COLOR.dim, 12, 'center', 'body', 2);
+      button('微信分享', 'shareCurrent', 22, 395, 226, 32, { primary: true, size: 11, disabled: !overlay.shareAvailable });
+      button('返回结算', 'backFromCard', 22, 440, 226, 30, { size: 10 });
+      return;
+    }
     text('系统截屏即可分享 · 无外链', 135, 356, 8, COLOR.dim, 'center', 'body');
     if (shareTextVisible) {
       rect(18, 364, 234, 55, COLOR.navy, COLOR.gold, .6);
@@ -746,12 +758,12 @@ function createUI(options) {
     else if (view.screen === 'menu' || view.screen === 'title' || view.screen === 'classic') drawMenu(view);
     else if (view.screen === 'map') drawMap(view);
     else if (view.screen === 'growth') drawGrowth(view);
-    else if (view.screen === 'dailyBrief') drawDaily(view);
-    else if (view.screen === 'meditation') drawMeditation(view);
+    else if (view.screen === 'dailyBrief') drawDaily(view, overlay);
+    else if (view.screen === 'meditation') drawMeditation(view, overlay);
     else if (view.screen === 'grant') drawGrant(view);
     else if (view.screen === 'result') { if (expanded) drawV2Result(view); else drawResult(view); }
     else if (view.screen === 'board') drawBoard(view);
-    else if (view.screen === 'card') drawCard(view);
+    else if (view.screen === 'card') drawCard(view, overlay);
     else {
       if (expanded && view.screen === 'play') drawV2HUD(view);
       else drawHUD(view.hud);
