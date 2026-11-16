@@ -1,16 +1,31 @@
 # AGENTS.md — 逐月计划 (Chase the Moon)
 
 **类别口径（扩展先读）：** 太空时代印刷海报 × 竖屏纵深街机（追击与捕获）。  
-「复古未来主义」只作族谱概括，不是标签主称。完整三层定位与空间模型定稿见 `DESIGN.md` §2a。
+2026-11-16 用户进一步明确视觉核心为「宇宙航行、航线、工作台、复古未来风格」；复古未来不再只作族谱概括。完整三层定位、空间模型与统一美术定稿见 `DESIGN.md` §2a、F4–F6。
 
-竖屏像素网页游戏：玩家扮演地球，追回被黑暗天体拖走的月亮。纯静态三件套，无构建。
+竖屏像素游戏：玩家扮演地球，追回被黑暗天体拖走的月亮。原网页版为纯静态三件套；微信小游戏源稿位于 `minigame/`，不引入框架或 npm 依赖。
 
 **规范路径：** `/Users/jonysong/Work/Products/chase-the-moon`  
 （已从 MiMo 会话临时目录迁出；后续所有改动以此为准。）
 
-## 当前状态（2026-09-22 晚 · 新会话先读这里）
+## 当前状态（2026-11-16 · 产品方向定稿，代码仍为微信 V2 第一阶段本地候选）
 
-- **版本**：git tag **`v1.0.1`** + HEAD `a49a239`（音频修复）已推 `origin`。交付包 `dist/chase-the-moon.zip`（**772K**，audit PASS 17 文件）。
+- **最新产品定稿（未实施）**：产品由整体大成长线、每日航线挑战、无尽追寻、星空冥想组成；技巧与当局变化融入每日/无尽，不另设 Roguelite 主入口。不做实时联机，保留世界排名、好友排名与分享的异步社交方向。成长章节有限，每日和无尽直接携带当前永久成长并排名，**不拆标准挑战/自由航线**。所有入口、排行、结算、分享和冥想统一使用宇宙航行、航线、工作台与复古未来视觉语言。详见 `DESIGN.md` F1–F6；本轮只记录决策，没有实现新增模式、网络服务或新视觉稿。
+- **目标与范围**：以本游戏验证个人微信 IAA 的开发、上线、真实广告收入与银行卡到账；用户明确按 `DESIGN.md`「微信扩展完整设计 V2」E13 第一阶段实施。本轮已完成第一章 L01–L04、喷射Ⅰ–Ⅲ、每日 A 池、航图/成长/每日简报/结算/分享卡和第一章程序美术；等待用户体验验收。V2 三章十二关仍是内容与教学基础，最新四板块及统一美术方向以 F1–F6 为准。
+- **候选与保护**：仍在 `feat/wechat-iaa`，基线 `e1b6b63`；此前微信基础移植和本轮扩展均未提交、推送或上传。根 `game.js/index.html/style.css/assets` 与 Git 基线无差异；原 H5/小红书 ZIP 未重建。无框架、npm 依赖或新增下载。
+- **可玩循环**：L01 追光、L02 三组岩阵、L03 星尘补给、L04 安全授予并立即练习定向喷射；目标需真实拾取/操作及追近满条，漏收有安全尾段，无自然追近代过关。喷射按下沿触发，无方向不扣费；首通共 8 点，可花 4 点强化Ⅱ级，再进入 150 秒每日 A。L04 后主键转每日，L05 明示后续航程未开放；双脉冲/引力帆与 B/C 仅显示解锁来源，不可进入。
+- **存档与奖励**：独立 `campaignV2/growthV2/dailyV2`，保留经典成绩/解锁和未知扩展字段；能力授予、强化、结算均先一次持久化，成功后才更新余额与状态，失败保留重试。主线首通一次；每日 UTC+8 开局日归属、四模板无重复选三、三段各 20 月辉/1 技巧门、评级补差与每日共用 5 点上限；日期回拨账本保留，成绩保留最近 30 个挑战日。
+- **页面与美术**：复用原海报和天体，新增程序航图节点、能力图形、章节航线裁片、技巧门、稀疏第一章星场与喷射反馈；中文沿用字体子集与系统回退。可编辑源稿为 `minigame/src/{ui,core,campaign,daily,progression}.js`；第一章标注视觉稿见 `design-refs/wechat-v2/phase1-review.html`（当前候选截图，非用户验收记录）。没有新增 AI 栅格裁片，后两章素材未制作；现有候选不代表 F4–F6 的统一美术目标已经完成。
+- **生成物**：`node tools/pack_wechat.js --preview` → `dist/wechat/`，当前 **25 文件 / 960,059 字节**；逐文件 manifest 与源码/包内 SHA-256 及总大小一致。预览模拟广告与调试入口不在生产包，生产 `debug: false`；根 `project.config.json` 继续指向 `dist/wechat/`。
+- **本轮验证**：**111 项 Node 测试全部通过**（包含原 64 项及新增 47 项）；22 个 JS 语法与 2 个 JSON 检查通过。本机 Chrome Canvas/触摸模拟实际走完 L01–L04（约 36/50/58/70 秒），完成喷射Ⅱ、重启恢复、每日 150 秒并获 5 点；覆盖暂停、经典广告取消/完成/无填充、QTE、成绩卡、360×740/390×790/430×932/1024×768 和原 H5 冒烟。Ⅰ级通关及Ⅲ级重玩、无方向喷射、存储读写失败/重试、重复结算、跨日/回拨/补差有针对性测试。独立复核发现的暂停退出静音已修复并复核通过，无剩余确定 P1/P2。
+- **证据与临时产物**：本轮原始测试日志、浏览器结果、关键单张裁剪截图及修改前 core/ui 副本位于 `.playwright-cli/wechat-v2/`；正式视觉稿所用截图已复制到 `design-refs/wechat-v2/`，不依赖临时目录。生成包留 `dist/`，上述两个生成物目录继续由既有忽略规则管理。验证进程已结束，无持续轮询或遗留预览服务。
+- **尚未验证**：微信开发者工具编译、iOS/Android 微信真机、真实音频手感、微信中文字体回退、真实广告展示/收益、正式账号资质/备案/流量主及到账。**浏览器模拟通过不等于微信真机、用户体验或商业验收通过。** 用户此前「暂不安装开发者工具」约束继续有效。
+- **账号与广告**：AppID 继续仅按测试用途配置；`minigame/config.js` 广告位为空，生产不显示续玩入口、不伪造奖励。经典广告适配器保留；L01–L04 和每日明确不提供续玩广告。
+- **下一步与责任**：按最新定稿先形成统一视觉系统和工作台、四板块入口、每日/排行、无尽、冥想、结算与分享的关键页面稿，再进入对应实施；后两章与 B/C 池沿用现有成长存档。无尽、冥想、真实异步排名和分享挑战落地均未实现，具体平台与服务端规格待实施设计。用户以后决定启用官方工具时再导入/登录/真机验证，确认正式资质后接真实广告位；上传、提审、发布另按授权执行。
+
+## 原网页基线与待验收项（2026-09-22）
+
+- **版本**：git tag **`v1.0.1`** 后追加音频修复 `a49a239` 与状态收口 `e1b6b63`，已推 `origin`。原交付包 `dist/chase-the-moon.zip`（**772K**，audit PASS 17 文件）本轮未重建。
 - **产品完成**：四档难度+竞速；月之暗面（blood+暗月）；QTE 体验包（真判定环三态/连套升级/顿帧 juice）；**MoBA 摇杆**（96px 盘、t^1.1、steer 24、无双死区）；井黏滞软化；金标无 hit-stop；QTE 与追逐同族速度跟踪；工程收尾（字体只留 B、board 清洗、save 提示、noise 缓存）。
 - **音频结论（小红书容器实测，勿再走弯路）**：
   1. **Web Audio 可用**，但 **`AudioContext` 只能在用户手势里 `new`**——否则永久 `suspended`（按键有声 = 已通）。
@@ -30,6 +45,9 @@
 ├── game.js             # 全部逻辑：状态机、手感、音频、渲染
 ├── style.css           # 像素 UI / HUD / 虚拟摇杆
 ├── DESIGN.md           # 视觉与产品蓝图（调色、字号、反模式）
+├── minigame/           # 微信小游戏可编辑源稿（入口、核心、UI、平台、广告）
+├── tests/              # 微信迁移的 Node 逻辑与模拟 SDK 回归
+├── project.config.json # 微信工具配置，运行目录 dist/wechat/
 ├── bgm/                # 音乐母带（mp3/wav 仅存档；运行时不加载，不进小红书包）
 │   ├── waiting_lobby.mp3/.wav
 │   └── results_score.mp3/.wav
@@ -145,16 +163,16 @@ ffmpeg -y -i ../../bgm/results_score.wav -codec:a libmp3lame -b:a 96k -ar 22050 
 | 局内 06-stipple 化（星噪层/表盘控件）+ QTE 时间条删除；**局内不要 keyline 内框**（加了被退回） | 用户定：局内对齐 06-gameplay-stipple 参考；两个控件间的时间条「没有必要」；满版沉浸，框线多余 |
 | 摇杆浮动原点（按哪跟哪）+ 死区 5px/满行程 26px + steer 12.5 | 用户要「更跟手」；固定原点+线性全行程是主因 |
 | **空间模型 = 伪 3D 纵深截击**（`projectBody` z+消失点投影；躲闪/陨石飞入带 3D 感是设计） | 用户确认（2026-09-22）：正常，不改纯平面；扩展勿删 z、勿改成同平面生成 |
-| **类别口径：太空时代印刷海报 × 竖屏纵深街机**（「复古未来主义」只作族谱） | 用户定（2026-09-22）：扩展/文案/美术对齐都按 DESIGN §2a 三层表，避免跑偏 |
+| **类别口径：太空时代印刷海报 × 竖屏纵深街机**；2026-11-16 起「复古未来」明确成为画面核心，不再只作族谱 | 用户定（2026-09-22）：扩展/文案/美术对齐按 DESIGN §2a 三层表；用户补充（2026-11-16）：所有入口与分享统一按宇宙航行、航线、工作台、复古未来视觉语言，见 F4–F6 |
 
 ## Git 治理（2026-09-21 起）
 
-- 基线 tag：`v1.0.0` → **`v1.0.1`**（2026-09-22）。纯本地仓库。
+- 基线 tag：`v1.0.0` → **`v1.0.1`**（2026-09-22）；GitHub 远程为 `jonysong-beta/chase-the-moon`。本轮微信改造尚未提交或推送。
 - **提交纪律**：动运行时文件（html/css/js/assets）后，先 `node --check game.js` + `tools/pack_xhs.sh`，再 commit；message 写「改了什么 + 为什么」。
 - **缓存版本号**：封面/面板三张图（`cover-bg.webp` / `cover-moon.webp` / `menu.webp`）每次内容变更，必须同步升 `index.html` 和 `game.js` 里的 `?v=N`——iOS Safari 图片缓存极顽固，只刷新不一定拿新图。
 - 不入库：`dist/`、`.playwright-cli/`、`music/raw/`、`music/pack/`（均为生成物，见 `.gitignore`）。
 - **`.skill/minitool-zip-builder/` 不入库**（gitignore），但是交付门禁依赖它：打包后必须跑  
-  `python3 .skill/minitool-zip-builder/minitool-zip-builder/scripts/audit_artifact.py ./dist/chase-the-moon`  
+  `python3 .skill/minitool-zip-builder/scripts/audit_artifact.py ./dist/chase-the-moon`
   以及对 `dist/chase-the-moon.zip` 再跑一次。若本机没有该目录，从技能包安装 minitool-zip-builder v1.6.0 后再验收，**不要跳过 audit**。
 - 封面底图管线（重跑必须按序）：`tools/patch_cover_grain.py` → `tools/repair_cover_ring.py`（两处缺口，参数见 DESIGN.md）→ `tools/patch_moonspot_stars.py`（加法，不可重复执行）。
 - 面板底图管线：`tools/patch_menu_seams.py`（源 `tools/menu-prseam.webp`）抹仪场烘焙断口——两条横向金线（y≈1041/1205）、x=0/1043 竖框线（仅 navy 区）、右缘 AI 水印残迹；奶油边界 y1265→y1410；星图收进圆角矩形屏幕框（边距 36 / 圆角 30 / 2px 深墨描边，监视器隐喻，用户定）。
@@ -166,7 +184,7 @@ ffmpeg -y -i ../../bgm/results_score.wav -codec:a libmp3lame -b:a 96k -ar 22050 
 - 禁：内联 `<script>`、`onclick=` 行内事件、fetch/XHR/一切网络请求、eval/new Function、WASM、Worker、iframe、form 提交、window.open/prompt、clipboard/execCommand、外部 CDN/图片/字体
 - 可用：Canvas 2D、WebGL（受限）、包内资源 src 引用、内联样式、localStorage/IndexedDB、文本选择
 - 打包：`tools/pack_xhs.sh` → `dist/chase-the-moon.zip`（自带白名单/禁用 API 自检）
-- **官方构建规范**（`.skill/minitool-zip-builder/`，v1.6.0）：zip 根目录必须直接是 `index.html`（`cd dist/chase-the-moon && zip -qr ../chase-the-moon.zip .`，不可带目录层）；JS ≤ ES2017（禁 `?.`/`??`/对象 spread/可选 catch 绑定等，Chrome 61 基线）；CSS 走「Chrome 61 基线 + 增强层覆盖」（禁 inset/gap/clamp/min()/dvh/env()/aspect-ratio 单实现——本项目全部用「基线声明在前、增强声明在后」或 margin 基线）；交付前跑 `python3 .skill/minitool-zip-builder/minitool-zip-builder/scripts/audit_artifact.py ./dist/chase-the-moon` 和 zip 各一次
+- **官方构建规范**（`.skill/minitool-zip-builder/`，v1.6.0；仅适用小红书包）：zip 根目录必须直接是 `index.html`（`cd dist/chase-the-moon && zip -qr ../chase-the-moon.zip .`，不可带目录层）；JS ≤ ES2017（禁 `?.`/`??`/对象 spread/可选 catch 绑定等，Chrome 61 基线）；CSS 走「Chrome 61 基线 + 增强层覆盖」（禁 inset/gap/clamp/min()/dvh/env()/aspect-ratio 单实现——本项目全部用「基线声明在前、增强声明在后」或 margin 基线）；交付前跑 `python3 .skill/minitool-zip-builder/scripts/audit_artifact.py ./dist/chase-the-moon` 和 zip 各一次
 
 ## 不做
 

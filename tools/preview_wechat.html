@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>逐月计划 · 微信版本地验证</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;background:#08121e;color:#f0e6d3;font:13px monospace;height:100%;overflow:hidden}
+    main{position:absolute;inset:0 0 54px;display:flex;justify-content:center}#surface{position:relative;height:100%;width:100%;max-width:520px;touch-action:none}canvas{display:block;width:100%;height:100%;touch-action:none}
+    footer{position:absolute;bottom:0;height:54px;width:100%;display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;background:#101f30;padding:4px 8px;font-size:11px}
+    select,button{font:inherit;color:#f0e6d3;background:#19344b;border:1px solid #a88848;padding:5px 7px;cursor:pointer}
+    #status{padding:0 4px}#ad-overlay{position:absolute;inset:0;background:#07111df5;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;z-index:4;padding:28px;text-align:center}
+    #ad-overlay p{line-height:1.8;max-width:300px}#error{position:absolute;top:20%;left:10%;right:10%;color:#e8c878;line-height:1.8}
+  </style>
+</head>
+<body>
+  <main><div id="surface"><div id="error"></div><div id="ad-overlay"><strong>本地广告回调模拟</strong><p>这里只验证游戏的奖励和返回流程，不展示真实广告，也不产生广告收入。</p><button id="ad-complete">模拟完整观看</button><button id="ad-cancel">模拟提前关闭</button></div></div></main>
+  <footer><span>浏览器模拟 · 非微信真机</span><select id="ad-mode" aria-label="广告模拟结果"><option value="normal">手动模拟广告</option><option value="unavailable">无广告填充</option><option value="error">加载失败</option></select><button id="fail-run">测试失败</button><button id="background">切后台</button><span id="status">加载中</span></footer>
+  <script src="/dist/wechat-preview.js"></script>
+</body>
+</html>

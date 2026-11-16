@@ -1,0 +1,13 @@
+{
+  "description": "逐月计划 · 微信小游戏本地开发候选",
+  "projectname": "chase-the-moon",
+  "appid": "wx8c45ae87ea9de342",
+  "compileType": "game",
+  "miniprogramRoot": "dist/wechat/",
+  "setting": {
+    "es6": true,
+    "minified": false,
+    "urlCheck": true
+  },
+  "packOptions": { "ignore": [], "include": [] }
+}
