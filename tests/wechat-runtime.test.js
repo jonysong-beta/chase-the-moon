@@ -253,7 +253,7 @@ test('real touch bindings reach menu/run and clear simultaneous steering/jet on 
   }
   tap(135, 422); fake.frame(1);
   assert.equal(app.game.getView().screen, 'title');
-  tap(135, 396); fake.frame(20);
+  tap(135, 455); fake.frame(20);
   assert.equal(app.game.getView().screen, 'classic');
   tap(135, 396); fake.frame(30);
   assert.equal(app.game.getView().screen, 'intro');

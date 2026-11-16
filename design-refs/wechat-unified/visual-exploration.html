@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230c1d30'/%3E%3Ccircle cx='16' cy='16' r='10' fill='%23d4a84b'/%3E%3C/svg%3E">
+<title>逐月计划 · 统一视觉探索 01</title>
+<style>
+@font-face{font-family:Geist;src:url("../../assets/fonts/GeistMono.woff2") format("woff2");font-display:swap}
+@font-face{font-family:Noto;src:url("../../assets/fonts/NotoSerifSC-700-sub.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:Limelight;src:url("../../assets/fonts/Limelight.woff2") format("woff2");font-display:swap}
+:root{--ink:#08131d;--navy:#0c1d30;--panel:#10263a;--cream:#f0e6d3;--paper:#e8dcc8;--dim:#b8ad92;--gold:#d4a84b;--bright:#e8c878;--teal:#3d8b7a;--rust:#d97b3a;--line:rgba(212,168,75,.46);--mono:Geist,"PingFang SC",monospace;--serif:Noto,"Songti SC",serif}
+*{box-sizing:border-box}html{background:var(--ink)}body{margin:0;color:var(--cream);font-family:var(--mono);background:var(--ink)}a{color:inherit;text-decoration:none}button{font:inherit}button,a{-webkit-tap-highlight-color:transparent}button:focus-visible,a:focus-visible{outline:2px solid var(--bright);outline-offset:4px}h2[tabindex]:focus{outline:none}[hidden]{display:none!important}
+.study{min-height:100vh;display:grid;grid-template-columns:390px minmax(360px,560px);justify-content:center;gap:72px;padding:48px 32px;background-color:var(--ink);background-image:radial-gradient(rgba(232,200,120,.12) .6px,transparent .7px);background-size:19px 19px}
+.device{width:390px;height:844px;position:sticky;top:32px;align-self:start}.phone{height:100%;position:relative;overflow:hidden;border:1px solid var(--line);background:var(--navy);box-shadow:0 24px 80px rgba(0,0,0,.38)}.phone:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:20;opacity:.16;background-image:radial-gradient(rgba(240,230,211,.28) .45px,transparent .55px);background-size:4px 4px}
+.screen{position:absolute;inset:0;padding:23px 24px 18px;display:flex;flex-direction:column;overflow:hidden;background:var(--navy)}.screen>*{position:relative;z-index:1}.screen.calm{background:#0a1927}.eyebrow{margin:0;color:var(--gold);font-size:10px;letter-spacing:.17em;text-transform:uppercase}.masthead{display:flex;justify-content:space-between;align-items:flex-start;border-top:1px solid var(--line);padding-top:13px}.masthead h2{font:700 27px/1.2 var(--serif);letter-spacing:.08em;margin:8px 0 0}.edition{text-align:right;color:var(--dim);font-size:9px;line-height:1.8;letter-spacing:.08em}.edition b{display:block;color:var(--bright);font-weight:400}.back{display:inline-flex;align-items:center;min-height:44px;margin:-10px 0 4px -8px;padding:0 8px;color:var(--dim);font-size:11px}.back:before{content:"←";margin-right:8px;color:var(--gold);font-size:16px}.screen-title{margin:4px 0 0;font:700 30px/1.25 var(--serif);letter-spacing:.08em}.screen-subtitle{margin:8px 0 0;color:var(--gold);font-size:10px;letter-spacing:.11em}.section-label{display:flex;justify-content:space-between;align-items:center;color:var(--dim);font-size:9px;letter-spacing:.12em}.section-label:before{content:"";width:18px;height:1px;background:var(--gold);margin-right:8px}.section-label span:first-of-type{margin-right:auto}.section-label span:last-child{color:var(--gold)}
+.orbit-chart{height:293px;margin-top:12px;position:relative;border-bottom:1px solid var(--line)}.orbit-chart svg,.route-map svg,.growth-map svg{position:absolute;inset:0;width:100%;height:100%}.orbit-chart .earth{position:absolute;width:72px;height:72px;left:30px;top:141px}.orbit-chart .moon{position:absolute;width:63px;height:63px;right:28px;top:30px}.orbital-label{position:absolute;color:var(--dim);font-size:8px;line-height:1.7;letter-spacing:.1em}.orbital-label b{display:block;color:var(--cream);font-weight:400}.label-earth{left:14px;top:218px}.label-moon{right:8px;top:99px;text-align:right}.chart-index{position:absolute;left:4px;top:14px;color:var(--gold);font-size:9px;letter-spacing:.12em}.current-mission{position:absolute;left:0;right:0;bottom:11px;display:flex;justify-content:space-between;align-items:flex-end}.current-mission small{display:block;color:var(--dim);font-size:9px;letter-spacing:.08em}.current-mission strong{display:block;margin-top:5px;font:700 18px/1.2 var(--serif);letter-spacing:.06em}.round-link{display:grid;place-items:center;width:46px;height:46px;border:1px solid var(--gold);border-radius:50%;color:var(--bright);font-size:22px}.progress-track{display:flex;gap:5px;margin:12px 0 15px}.progress-track i{height:4px;flex:1;background:var(--gold)}.progress-track i.future{background:transparent;border:1px solid var(--line)}
+.channels{border-top:1px solid var(--line)}.channel{min-height:72px;display:grid;grid-template-columns:31px 1fr auto;align-items:center;gap:12px;border-bottom:1px solid var(--line);position:relative}.channel-no{color:var(--gold);font-size:10px;align-self:start;padding-top:18px}.channel h3{margin:0;font:700 16px/1.2 var(--serif);letter-spacing:.08em}.channel p{margin:5px 0 0;color:var(--dim);font-size:9px;letter-spacing:.04em}.channel-data{text-align:right;color:var(--gold);font-size:10px;letter-spacing:.06em}.channel-data b{display:block;font-size:15px;font-weight:400;color:var(--cream)}.channel-primary{min-height:83px;margin:0 -10px;padding:0 10px;background:var(--paper);color:var(--ink);border-bottom:3px solid var(--gold)}.channel-primary .channel-no,.channel-primary .channel-data{color:#725722}.channel-primary p{color:#514a3d}.channel-primary .channel-data b{color:var(--ink)}.channel-primary:after{content:"";position:absolute;right:10px;top:0;width:34px;height:3px;background:var(--rust)}.utility-row{display:flex;justify-content:space-between;align-items:center;margin-top:auto;min-height:44px;color:var(--dim);font-size:9px;letter-spacing:.08em}.utility-row span:last-child{color:var(--gold)}
+.growth-map{height:454px;margin:12px -4px 0;position:relative}.growth-map img{position:absolute;width:58px;height:58px;right:24px;top:18px;opacity:.92}.map-node{position:absolute;text-align:center;color:var(--dim);font-size:9px}.map-node b{display:grid;place-items:center;width:42px;height:42px;margin-bottom:7px;border:1px solid var(--line);border-radius:50%;color:var(--cream);font-size:11px;font-weight:400;background:var(--navy)}.map-node.done b{background:var(--cream);color:var(--ink);box-shadow:0 0 0 5px var(--navy),0 0 0 6px var(--gold)}.map-node.current b{box-shadow:0 0 0 5px var(--navy),0 0 0 6px var(--bright);color:var(--bright)}.map-node.locked b{border-style:dashed;color:var(--dim)}.n1{left:26px;top:72px}.n2{left:148px;top:122px}.n3{left:47px;top:204px}.n4{left:190px;top:252px}.n5{left:82px;top:340px}.n6{left:234px;top:382px}.growth-readout{border-top:1px solid var(--gold);border-bottom:1px solid var(--line);padding:14px 0;display:grid;grid-template-columns:1fr auto;gap:6px}.growth-readout strong{font:700 18px var(--serif);letter-spacing:.06em}.growth-readout small{grid-column:1;color:var(--dim);font-size:9px}.growth-readout b{grid-column:2;grid-row:1/3;align-self:center;color:var(--bright);font-size:12px;font-weight:400}
+.route-map{height:254px;margin:12px -8px 0;position:relative;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.route-map .earth{position:absolute;width:52px;height:52px;left:28px;bottom:30px}.route-map .moon{position:absolute;width:46px;height:46px;right:28px;top:25px}.route-stamp{position:absolute;right:3px;bottom:13px;text-align:right;color:var(--dim);font-size:8px;line-height:1.8;letter-spacing:.08em}.route-stamp b{display:block;color:var(--gold);font-weight:400}.route-metrics{display:grid;grid-template-columns:repeat(3,1fr);padding:14px 0;border-bottom:1px solid var(--line)}.route-metrics div+div{border-left:1px solid var(--line);padding-left:16px}.route-metrics b{display:block;font-size:18px;font-weight:400;color:var(--cream)}.route-metrics span{display:block;margin-top:4px;color:var(--dim);font-size:8px;letter-spacing:.09em}.rank-band{margin-top:15px}.rank-row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:10px 0;border-bottom:1px solid rgba(212,168,75,.2);font-size:11px}.rank-row small{display:block;margin-top:4px;color:var(--dim);font-size:8px}.rank-row b{color:var(--bright);font-size:15px;font-weight:400}.rank-note{margin:8px 0 0;color:var(--dim);font-size:8px}.action-stack{display:grid;grid-template-columns:1fr 106px;gap:10px;margin-top:auto}.action{min-height:48px;border:1px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--cream);font-size:12px;letter-spacing:.06em;cursor:pointer}.action.primary{background:var(--paper);color:var(--ink);border-color:var(--paper);box-shadow:inset 0 -3px 0 var(--gold)}.action.secondary{color:var(--bright)}
+.endless-time{margin:34px 0 0;text-align:center}.endless-time small{color:var(--gold);font-size:9px;letter-spacing:.16em}.endless-time strong{display:block;margin-top:8px;font:400 54px/1 var(--mono);letter-spacing:-.06em}.endless-time p{margin:12px 0 0;color:var(--dim);font-size:10px}.infinity-chart{height:216px;position:relative;margin:10px 0}.infinity-chart svg{width:100%;height:100%}.infinity-chart .earth{position:absolute;width:58px;height:58px;left:calc(50% - 29px);top:calc(50% - 29px)}.record-line{display:flex;justify-content:space-between;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0;color:var(--dim);font-size:10px}.record-line b{color:var(--cream);font-weight:400}.medal-strip{display:flex;justify-content:space-between;margin:14px 0;color:var(--gold);font-size:9px}.medal-strip span{display:flex;align-items:center;gap:6px}.medal-strip i{display:inline-block;width:7px;height:7px;border:1px solid var(--gold);transform:rotate(45deg)}
+.meditation-space{height:470px;position:relative;margin:10px -24px 0;overflow:hidden}.meditation-space .halo{position:absolute;left:50%;top:46%;border:1px solid rgba(212,168,75,.24);border-radius:50%;transform:translate(-50%,-50%)}.halo.one{width:260px;height:260px}.halo.two{width:360px;height:360px}.halo.three{width:480px;height:480px}.meditation-space .moon{position:absolute;width:136px;height:136px;left:calc(50% - 68px);top:calc(46% - 68px)}.meditation-space .earth{position:absolute;width:38px;height:38px;left:calc(50% + 99px);top:calc(46% + 83px)}.orbit-copy{position:absolute;left:0;right:0;bottom:28px;text-align:center}.orbit-copy strong{font:700 19px var(--serif);letter-spacing:.12em}.orbit-copy p{margin:10px 0 0;color:var(--dim);font-size:10px;line-height:1.8}.duration-picker{display:flex;justify-content:center;gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.duration-picker button{flex:1;min-height:46px;border:0;border-right:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer}.duration-picker button:last-child{border-right:0}.duration-picker button[aria-pressed=true]{color:var(--ink);background:var(--paper)}.calm-note{text-align:center;color:var(--dim);font-size:8px;margin:10px 0 14px;letter-spacing:.08em}
+.share-screen{background:var(--ink);padding:18px 22px}.share-poster{flex:1;border:1px solid var(--gold);padding:18px;position:relative;display:flex;flex-direction:column;background:var(--navy)}.share-poster:before{content:"";position:absolute;inset:6px;border:1px solid rgba(232,200,120,.25);pointer-events:none}.share-head{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:12px;color:var(--gold);font-size:8px;letter-spacing:.1em}.share-title{margin:20px 0 0;text-align:center;font:700 27px var(--serif);letter-spacing:.12em}.share-route{height:275px;position:relative;margin:4px -6px 0}.share-route svg{width:100%;height:100%}.share-route .earth{position:absolute;width:54px;height:54px;left:24px;bottom:27px}.share-route .moon{position:absolute;width:50px;height:50px;right:24px;top:22px}.share-score{text-align:center;border-top:1px solid var(--line);padding-top:13px}.share-score small{color:var(--dim);font-size:8px;letter-spacing:.12em}.share-score strong{display:block;color:var(--bright);font-size:38px;font-weight:400;line-height:1.15}.share-score p{margin:5px 0 0;color:var(--cream);font-size:10px}.share-footer{display:flex;justify-content:space-between;margin-top:auto;border-top:1px solid var(--line);padding-top:12px;color:var(--dim);font-size:8px}.share-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.demo-disclaimer{position:absolute;left:24px;right:24px;bottom:4px;z-index:3;color:rgba(197,184,154,.62);font-size:7px;letter-spacing:.08em;text-align:center;pointer-events:none}
+.notes{padding-top:12px}.study-tag{display:inline-block;border:1px solid var(--line);padding:6px 9px;color:var(--gold);font-size:10px;letter-spacing:.12em}.notes h1{font:700 42px/1.35 var(--serif);letter-spacing:.05em;margin:24px 0 18px}.notes>p{color:var(--dim);font-size:13px;line-height:1.9;max-width:500px}.principles{margin:32px 0;padding:0;list-style:none;border-top:1px solid var(--line)}.principles li{display:grid;grid-template-columns:34px 1fr;gap:12px;padding:17px 0;border-bottom:1px solid var(--line)}.principles .num{color:var(--gold);font-size:10px;padding-top:3px}.principles strong{font-size:13px;font-weight:400;color:var(--cream)}.principles p{margin:6px 0 0;color:var(--dim);font-size:11px;line-height:1.8}.tokens{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px}.swatch{height:54px;border:1px solid var(--line);padding:7px;display:flex;align-items:flex-end;font-size:8px}.type-specimen{margin-top:26px;padding-top:18px;border-top:1px solid var(--line)}.type-specimen strong{font:700 25px var(--serif);letter-spacing:.08em}.type-specimen span{display:block;margin-top:8px;color:var(--gold);font-size:10px;letter-spacing:.14em}.notes small{display:block;margin-top:24px;color:var(--dim);font-size:9px;line-height:1.8}.toast{position:absolute;z-index:30;left:30px;right:30px;bottom:26px;padding:13px 16px;background:var(--paper);color:var(--ink);border:1px solid var(--gold);font-size:10px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+@media(max-width:900px){.study{grid-template-columns:390px;gap:40px;padding:32px 20px}.device{position:relative;top:0}.notes h1{font-size:34px}}
+@media(max-width:480px){.study{display:block;padding:0;background:var(--navy)}.device{width:100%;height:100dvh;min-height:680px}.phone{border:0;box-shadow:none}.notes{padding:36px 24px;background:var(--ink)}.notes h1{font-size:32px}}
+@media(prefers-reduced-motion:no-preference){.screen{animation:appear .18s ease-out}.meditation-space .halo{animation:breathe 8s ease-in-out infinite}.meditation-space .halo.two{animation-delay:-2s}.meditation-space .halo.three{animation-delay:-4s}@keyframes appear{from{opacity:.5}to{opacity:1}}@keyframes breathe{50{border-color:rgba(232,200,120,.48)}}}
+</style>
+</head>
+<body>
+<main class="study">
+  <section class="device" aria-label="可点击的手机视觉原型">
+    <div class="phone">
+      <section class="screen" id="desk" aria-labelledby="desk-title">
+        <header class="masthead">
+          <div><p class="eyebrow">SOL III / NAVIGATION DESK</p><h2 id="desk-title" tabindex="-1">逐月工作台</h2></div>
+          <div class="edition">FLIGHT 016<b>2026.11.16</b></div>
+        </header>
+        <div class="orbit-chart" aria-label="当前主线航程示意图">
+          <svg viewBox="0 0 342 293" fill="none" aria-hidden="true">
+            <circle cx="171" cy="128" r="104" stroke="#d4a84b" stroke-opacity=".22"/>
+            <ellipse cx="171" cy="128" rx="157" ry="67" transform="rotate(-17 171 128)" stroke="#d4a84b" stroke-opacity=".34" stroke-dasharray="3 5"/>
+            <ellipse cx="171" cy="128" rx="126" ry="112" transform="rotate(37 171 128)" stroke="#d4a84b" stroke-opacity=".2"/>
+            <path d="M69 190C91 100 194 70 271 66" stroke="#e8c878" stroke-width="1.4" stroke-dasharray="4 5"/>
+            <path d="M70 190C140 192 219 155 271 66" stroke="#d4a84b" stroke-opacity=".35"/>
+            <path d="M164 10v16m-8-8h16M21 125h14m-7-7v14M306 178h14m-7-7v14" stroke="#d4a84b" stroke-opacity=".55"/>
+            <circle cx="69" cy="190" r="48" stroke="#e8c878" stroke-opacity=".5"/>
+            <circle cx="271" cy="66" r="43" stroke="#e8c878" stroke-opacity=".38" stroke-dasharray="2 4"/>
+            <circle cx="137" cy="114" r="3" fill="#e8c878"/><circle cx="188" cy="83" r="3" fill="#e8c878"/>
+            <circle cx="221" cy="174" r="2" fill="#d4a84b"/><circle cx="108" cy="49" r="1.5" fill="#f0e6d3"/>
+          </svg>
+          <span class="chart-index">CH. I → II / 04 OF 12</span>
+          <img class="earth" src="../../assets/sprites/earth.webp" alt="地球">
+          <img class="moon" src="../../assets/sprites/moon.webp" alt="月亮">
+          <span class="orbital-label label-earth">SOL III</span>
+          <span class="orbital-label label-moon">TARGET / LUNA<b>384.40</b></span>
+          <a class="current-mission" href="#growth" aria-label="展开大成长线">
+            <span><small>大成长线 / 当前航程</small><strong>第一章 · 循光启程</strong></span><span class="round-link" aria-hidden="true">→</span>
+          </a>
+        </div>
+        <div class="progress-track" aria-label="第一章四段已完成"><i></i><i></i><i></i><i></i><i class="future"></i><i class="future"></i><i class="future"></i><i class="future"></i></div>
+        <nav class="channels" aria-label="航行模式">
+          <a class="channel channel-primary" href="#daily"><span class="channel-no">02</span><div><h3>每日航线</h3><p>今日航道已就绪 · 可反复精进</p></div><span class="channel-data">ROUTE 016<b>150 S</b></span></a>
+          <a class="channel" href="#endless"><span class="channel-no">03</span><div><h3>无尽追寻</h3><p>航迹不熄，追寻就没有终点</p></div><span class="channel-data">PERSONAL<b>04:26</b></span></a>
+          <a class="channel" href="#meditation"><span class="channel-no">04</span><div><h3>星空冥想</h3><p>将仪表调暗，停留片刻</p></div><span class="channel-data">LOW SIGNAL<b>◌</b></span></a>
+        </nav>
+        <div class="utility-row"><span>成长点 04 · 喷射 Ⅱ</span><span>CLASSIC / SETTINGS</span></div>
+      </section>
+
+      <section class="screen" id="growth" aria-labelledby="growth-title" hidden>
+        <a class="back" href="#desk">返回工作台</a>
+        <p class="eyebrow">PERMANENT FLIGHT LOG / 01—12</p><h2 class="screen-title" id="growth-title" tabindex="-1">大成长线</h2><p class="screen-subtitle">每一次抵达，都让下一片星域展开</p>
+        <div class="growth-map">
+          <svg viewBox="0 0 342 454" fill="none" aria-hidden="true">
+            <circle cx="170" cy="218" r="160" stroke="#d4a84b" stroke-opacity=".12"/>
+            <circle cx="170" cy="218" r="112" stroke="#d4a84b" stroke-opacity=".12" stroke-dasharray="2 6"/>
+            <path d="M47 93L169 143 68 225 211 273 103 361 255 403" stroke="#d4a84b" stroke-width="1.2"/>
+            <path d="M255 403C289 340 308 282 301 215" stroke="#d4a84b" stroke-opacity=".35" stroke-dasharray="3 5"/>
+            <path d="M18 292h22m-11-11v22M277 133h18m-9-9v18" stroke="#d4a84b" stroke-opacity=".4"/>
+          </svg>
+          <img src="../../assets/sprites/moon.webp" alt="远处的月亮">
+          <span class="map-node done n1"><b>01</b>余辉</span><span class="map-node done n2"><b>02</b>碎石之间</span><span class="map-node done n3"><b>03</b>星尘补给</span><span class="map-node done n4"><b>04</b>第一脉冲</span><span class="map-node current n5"><b>05</b>引力边界</span><span class="map-node locked n6"><b>06</b>双重脉冲</span>
+        </div>
+        <div class="growth-readout"><strong>下一航程 · 引力边界</strong><small>永久能力 / 喷射 Ⅱ · 成长点 04</small><b>L05 →</b></div>
+        <div class="action-stack"><button class="action primary" type="button" data-demo>继续主线航程</button><a class="action secondary" href="#daily">今日航线</a></div>
+      </section>
+
+      <section class="screen" id="daily" aria-labelledby="daily-title" hidden>
+        <a class="back" href="#desk">返回工作台</a>
+        <p class="eyebrow">DAILY ROUTE / NO. 016</p><h2 class="screen-title" id="daily-title" tabindex="-1">每日航线</h2><p class="screen-subtitle">2026.11.16 · A / 近地航行</p>
+        <div class="route-map" aria-label="今日固定航线示意">
+          <svg viewBox="0 0 358 254" fill="none" aria-hidden="true">
+            <path d="M43 207C55 104 189 63 306 49" stroke="#e8c878" stroke-width="1.4" stroke-dasharray="4 5"/>
+            <path d="M31 218C132 242 289 160 318 35" stroke="#d4a84b" stroke-opacity=".3"/>
+            <ellipse cx="179" cy="127" rx="157" ry="69" transform="rotate(-17 179 127)" stroke="#d4a84b" stroke-opacity=".25"/>
+            <path d="M125 121l6 6-6 6-6-6zM180 90l6 6-6 6-6-6zM233 69l6 6-6 6-6-6z" fill="#e8c878"/>
+            <circle cx="43" cy="207" r="35" stroke="#d4a84b" stroke-opacity=".42"/><circle cx="306" cy="49" r="34" stroke="#d4a84b" stroke-opacity=".35"/>
+            <path d="M16 30h20M26 20v20M317 185h20m-10-10v20" stroke="#d4a84b" stroke-opacity=".38"/>
+          </svg>
+          <img class="earth" src="../../assets/sprites/earth.webp" alt="地球"><img class="moon" src="../../assets/sprites/moon.webp" alt="月亮">
+          <span class="route-stamp">SEED / 20261116-A<b>同一条航线，再飞一次</b></span>
+        </div>
+        <div class="route-metrics"><div><b>150 S</b><span>有效航行</span></div><div><b>03</b><span>连续航段</span></div><div><b>850</b><span>金色评级</span></div></div>
+        <div class="rank-band"><div class="section-label"><span>ASYNC TELEMETRY</span><span>好友 / 世界</span></div><div class="rank-row"><span>你的今日最佳<small>喷射 Ⅱ · 本机纪录已同步示意</small></span><b>850</b></div><div class="rank-row"><span>好友位置 / 世界位置<small>不是实时联机，只比较当日成绩</small></span><b>02 / 128</b></div><p class="rank-note">排名均为视觉版式示意，不代表已接入真实数据。</p></div>
+        <div class="action-stack"><button class="action primary" type="button" data-demo>进入今日航线</button><a class="action secondary" href="#share">分享航线</a></div>
+      </section>
+
+      <section class="screen" id="endless" aria-labelledby="endless-title" hidden>
+        <a class="back" href="#desk">返回工作台</a>
+        <p class="eyebrow">ENDLESS PURSUIT / SURVIVAL LOG</p><h2 class="screen-title" id="endless-title" tabindex="-1">无尽追寻</h2>
+        <div class="endless-time"><small>PERSONAL LONGEST FLIGHT</small><strong>04:26</strong><p>这一次，比上一次多走了一段。</p></div>
+        <div class="infinity-chart" aria-hidden="true">
+          <svg viewBox="0 0 342 216" fill="none"><path d="M171 108C117 25 30 43 42 108c12 65 83 55 129 0 46 55 117 65 129 0 12-65-75-83-129 0Z" stroke="#d4a84b" stroke-dasharray="4 5"/><path d="M171 108C117 53 65 62 65 108s64 55 106 0c42 55 106 55 106 0s-52-55-106 0Z" stroke="#e8c878" stroke-opacity=".35"/><circle cx="171" cy="108" r="50" stroke="#d4a84b" stroke-opacity=".24"/><path d="M171 6v18m-9-9h18M26 173h18m-9-9v18M298 36h18m-9-9v18" stroke="#d4a84b" stroke-opacity=".42"/></svg>
+          <img class="earth" src="../../assets/sprites/earth.webp" alt="">
+        </div>
+        <div class="record-line"><span>好友最长 / 世界最长</span><b>06:18 / 21:40</b></div><div class="medal-strip"><span><i></i>01:00 入轨</span><span><i></i>03:00 深空</span><span><i></i>05:00 未抵达</span></div><p class="rank-note">纪录数字仅用于视觉探索。</p>
+        <div class="action-stack"><button class="action primary" type="button" data-demo>开始无尽追寻</button><a class="action secondary" href="#share">分享纪录</a></div>
+      </section>
+
+      <section class="screen calm" id="meditation" aria-labelledby="meditation-title" hidden>
+        <a class="back" href="#desk">返回工作台</a>
+        <p class="eyebrow">QUIET ORBIT / LOW SIGNAL</p><h2 class="screen-title" id="meditation-title" tabindex="-1">星空冥想</h2>
+        <div class="meditation-space"><span class="halo one"></span><span class="halo two"></span><span class="halo three"></span><img class="moon" src="../../assets/sprites/moon.webp" alt="安静的金色月亮"><img class="earth" src="../../assets/sprites/earth.webp" alt="远处的地球"><div class="orbit-copy"><strong>把仪表调暗</strong><p>不必追上风，也不必抵达哪里。<br>让地月陪你，安静地绕行一会儿。</p></div></div>
+        <div class="duration-picker" aria-label="冥想时长"><button type="button" data-minutes="2" aria-pressed="false">02 分钟</button><button type="button" data-minutes="5" aria-pressed="true">05 分钟</button><button type="button" data-minutes="10" aria-pressed="false">10 分钟</button></div><p class="calm-note">无成绩 · 无排名 · 只保留此刻的星场</p>
+        <button class="action primary" type="button" data-demo>进入安静轨道 · <span id="duration-value">05</span> 分钟</button>
+      </section>
+
+      <section class="screen share-screen" id="share" aria-labelledby="share-title" hidden>
+        <a class="back" href="#daily">返回每日航线</a>
+        <article class="share-poster" aria-label="每日航线分享卡版式示意">
+          <div class="share-head"><span>CHASE THE MOON</span><span>FLIGHT LOG / 016</span></div>
+          <h2 class="share-title" id="share-title" tabindex="-1">今日航线</h2>
+          <div class="share-route"><svg viewBox="0 0 282 275" fill="none" aria-hidden="true"><ellipse cx="141" cy="137" rx="126" ry="66" transform="rotate(-19 141 137)" stroke="#d4a84b" stroke-opacity=".26"/><path d="M48 216C80 91 156 102 231 47" stroke="#e8c878" stroke-width="1.4" stroke-dasharray="4 5"/><path d="M49 216C136 239 219 140 231 47" stroke="#d4a84b" stroke-opacity=".35"/><circle cx="48" cy="216" r="37" stroke="#d4a84b" stroke-opacity=".4"/><circle cx="231" cy="47" r="35" stroke="#d4a84b" stroke-opacity=".4"/><path d="M112 126l6 6-6 6-6-6zM168 93l6 6-6 6-6-6z" fill="#e8c878"/><path d="M22 34h16m-8-8v16M241 207h16m-8-8v16" stroke="#d4a84b" stroke-opacity=".4"/></svg><img class="earth" src="../../assets/sprites/earth.webp" alt="地球"><img class="moon" src="../../assets/sprites/moon.webp" alt="月亮"></div>
+          <div class="share-score"><small>DAILY ROUTE / 2026.11.16</small><strong>850</strong><p>金色评级 · 好友位置 02</p></div>
+          <div class="share-footer"><span>SOL III / EARTH</span><span>同一航线，等你来接续</span></div>
+        </article>
+        <div class="share-actions"><button class="action primary" type="button" data-demo>系统分享</button><a class="action secondary" href="#daily">再飞一次</a></div>
+      </section>
+      <span class="demo-disclaimer">VISUAL STUDY 01 · 非运行界面 · 排行数据仅作版式示意</span>
+      <div class="toast" id="toast" role="status" hidden>视觉探索稿：真实玩法与平台分享尚未接入。</div>
+    </div>
+  </section>
+
+  <aside class="notes" aria-labelledby="study-title">
+    <span class="study-tag">VISUAL EXPLORATION / 01</span>
+    <h1 id="study-title">不是四个入口，<br>是一架航行工作台。</h1>
+    <p>第一张统一视觉探索稿。以深空星图为主显示区，以航线连接成长与成绩，以频道式入口组织每日、无尽和冥想；排行与分享仍是同一套飞行记录，而非另起的通用界面。</p>
+    <ol class="principles">
+      <li><span class="num">01</span><div><strong>星图就是主入口</strong><p>大成长线不再藏在普通按钮里。当前章节、地月位置和继续航程都在同一张可进入的轨道图中。</p></div></li>
+      <li><span class="num">02</span><div><strong>入口是航行频道，不是卡片墙</strong><p>三个模式使用一致的编号、标题、状态和遥测值。每日只出现一次，不再同时占主按钮与网格按钮。</p></div></li>
+      <li><span class="num">03</span><div><strong>排名和分享都是航行记录</strong><p>排行用遥测带表达，分享卡延续轨道、坐标、印章和印刷边框。示意数字不会被当作真实服务。</p></div></li>
+      <li><span class="num">04</span><div><strong>冥想仍然属于这座工作台</strong><p>减少控件和信息密度，保留同样的月亮、轨道与色板，而不是切换成通用治愈系界面。</p></div></li>
+    </ol>
+    <p class="eyebrow">BASE PALETTE / EXISTING PROJECT TOKENS</p>
+    <div class="tokens" aria-label="基础色板"><span class="swatch" style="background:#0c1d30">NAVY</span><span class="swatch" style="background:#f0e6d3;color:#08131d">CREAM</span><span class="swatch" style="background:#d4a84b;color:#08131d">GOLD</span><span class="swatch" style="background:#3d8b7a;color:#08131d">TEAL</span><span class="swatch" style="background:#d97b3a;color:#08131d">RUST</span></div>
+    <div class="type-specimen"><strong>逐月计划 / 航行日志</strong><span>CHASE THE MOON · SOL III · 384.40</span></div>
+    <small>操作：点击手机内入口切换页面；冥想时长和演示按钮提供最小反馈。本页保留静态视觉探索；方向已获初步认可，工作台、每日与分享卡的第一批 Canvas 实施截图见同目录 canvas-*.png。后续继续收敛实际运行画面与其他模式。</small>
+  </aside>
+</main>
+<script>
+(function(){
+  var screens=Array.prototype.slice.call(document.querySelectorAll('.screen'));
+  var toast=document.getElementById('toast'),timer=null;
+  function show(id,moveFocus){
+    var target=document.getElementById(id);
+    if(!target||!target.classList.contains('screen'))target=document.getElementById('desk');
+    screens.forEach(function(screen){screen.hidden=screen!==target});
+    var heading=target.querySelector('h2[tabindex]');
+    if(heading&&moveFocus)heading.focus({preventScroll:true});
+  }
+  window.addEventListener('hashchange',function(){show(location.hash.slice(1)||'desk',true)});
+  show(location.hash.slice(1)||'desk',false);
+  document.querySelectorAll('[data-demo]').forEach(function(button){
+    button.addEventListener('click',function(){
+      clearTimeout(timer);toast.hidden=false;timer=setTimeout(function(){toast.hidden=true},2400);
+    });
+  });
+  document.querySelectorAll('[data-minutes]').forEach(function(button){
+    button.addEventListener('click',function(){
+      document.querySelectorAll('[data-minutes]').forEach(function(item){item.setAttribute('aria-pressed',String(item===button))});
+      document.getElementById('duration-value').textContent=button.getAttribute('data-minutes').padStart(2,'0');
+    });
+  });
+})();
+</script>
+</body>
+</html>

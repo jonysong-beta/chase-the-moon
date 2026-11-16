@@ -177,6 +177,24 @@ test('daily runs 150 active seconds without QTE, freezes across pause, and belon
   const writes = env.writes.length; g.update(60); assert.equal(env.writes.length, writes);
 });
 
+test('V2 share card presents a route and real results without fake social ranks', () => {
+  const env = fixture(ready(2)), g = env.game; g.action('startDaily');
+  g.setInput({ ax: 0, ay: -1 }); g.update(60); g.update(60); g.update(60);
+  assert.equal(g.getView().screen, 'result');
+  const drawn = [];
+  const ctx = new Proxy({ fillText(value) { drawn.push(String(value)); } },
+    { get: (object, key) => key in object ? object[key] : () => {} });
+  g.drawShareCard(ctx, 540, 860);
+  assert.ok(drawn.includes('CHASE THE MOON'));
+  assert.ok(drawn.includes('每日航线'));
+  assert.ok(drawn.includes('300'));
+  assert.ok(drawn.includes('未达评级'));
+  assert.ok(drawn.includes('2026-11-07'));
+  assert.ok(drawn.includes('本机航行纪录'));
+  assert.ok(!drawn.includes('喷射 Ⅱ'));
+  assert.ok(!drawn.some(value => /存活航段|月辉 \/ 技巧门|归属航行日|好友位置|世界位置|世界排名/.test(value)));
+});
+
 test('daily scoring caps signals per segment and scores a spatial gate only once', () => {
   const env = fixture(ready(1)), g = env.game; g.action('startDaily');
   for (let i = 0; i < 23; i++) collect(g, 'signal', { segment: 0, id: 'signal-' + i });

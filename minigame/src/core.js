@@ -11,6 +11,10 @@ function createGame(options) {
   const ART = options.assets || {};
   const monoFamily = options.fonts && typeof options.fonts.mono === 'string' && options.fonts.mono.trim()
     ? options.fonts.mono.trim() : 'monospace';
+  const titleFamily = options.fonts && typeof options.fonts.title === 'string' && options.fonts.title.trim()
+    ? options.fonts.title.trim() : 'serif';
+  const displayFamily = options.fonts && typeof options.fonts.display === 'string' && options.fonts.display.trim()
+    ? options.fonts.display.trim() : titleFamily;
   const storage = options.storage || { getItem() { return null; }, setItem() {} };
   const createCanvas = options.createCanvas;
   const clock = typeof options.now === 'function' ? options.now : Date.now;
@@ -3401,7 +3405,7 @@ function createGame(options) {
       }) },
       growth: { points: data.growthV2.points, abilities: abilityRows, error: growthError },
       daily: { date, pool: 'A', name: '近地航行', unlocked: data.campaignV2.completed.indexOf('L04') >= 0, remainingRewards: day.remaining,
-        bestText: best ? String(best.score) + ' 分' : '尚无本机纪录', bestAbilitiesText: best ? abilityText(best.abilities) : abilityText(a),
+        bestText: best ? String(best.score) + ' 分' : '尚无本机纪录', bestScore: best ? best.score : null, bestAbilitiesText: best ? abilityText(best.abilities) : abilityText(a),
         rating: best ? Daily.rating(best.score) : 'none', version: Daily.RULE_VERSION,
         historyText: Object.keys(data.dailyV2.records).some(k => k.startsWith(date + '|A|') && k !== key) ? '另有旧规则纪录，分开保存' : '' },
       run: v ? { title: G.mode === 'daily' ? '每日 A · 近地航行' : v.levelId + ' · ' + v.level.name,
@@ -3416,16 +3420,78 @@ function createGame(options) {
   }
   function drawV2Share(g, w, h) {
     const r = v2ResultView(); if (!r) return;
+    const daily = r.kind === 'daily';
+    const dateRow = r.rows.find(row => row.label === '归属航行日');
+    const timeRow = r.rows.find(row => row.label === (daily ? '存活航段' : '本次用时'));
+    const date = dateRow ? String(dateRow.value).split(' · ')[0] : '';
+    const time = timeRow ? String(timeRow.value).split(' · ').pop() : '';
+    const score = daily ? String((r.rows[0] || {}).value || '').split(' · ')[0] : time;
+    const rating = daily ? Daily.rating(Number(score)) : 'none';
+    const ratingText = { none: '未达评级', bronze: '铜级航线', silver: '银级航线', gold: '金色航线' }[rating];
+    const mission = daily ? 'A' : String(r.subtitle).split(' · ')[0];
     g.save(); g.scale(w / 540, h / 860);
-    g.fillStyle = '#15202E'; g.fillRect(0, 0, 540, 860);
-    g.strokeStyle = '#D4A84B'; g.lineWidth = 2; g.strokeRect(26, 26, 488, 808);
-    g.textAlign = 'center';
-    const line = (text, y, size, color) => { g.fillStyle = color || '#F0E6D3'; g.font = size + 'px ' + monoFamily; g.fillText(text, 270, y, 460); };
-    line('逐月计划 / CHASE THE MOON', 92, 24, '#E8C878');
-    line(r.title, 156, 40); line(r.subtitle, 205, 25);
-    if (ART.earth) g.drawImage(ART.earth, 210, 243, 120, 120);
-    r.rows.forEach((row, i) => { line(row.label, 414 + i * 65, 19, '#C5B89A'); line(row.value, 443 + i * 65, 25); });
-    line(r.abilityText, 734, 23, '#E8C878'); line('本机航行纪录 · 系统截屏分享', 790, 19, '#C5B89A');
+    g.fillStyle = '#E8DCC8'; g.fillRect(0, 0, 540, 860);
+    g.fillStyle = '#0C1D30'; g.fillRect(18, 18, 504, 824);
+    for (let i = 0; i < 620; i++) {
+      const x = 22 + ((i * 89 + 31) % 491) / 491 * 496;
+      const y = 22 + ((i * 53 + 47) % 797) / 797 * 816;
+      g.fillStyle = i % 6 ? 'rgba(240,230,211,.055)' : 'rgba(212,168,75,.16)';
+      g.fillRect(x, y, i % 6 ? 1 : 1.7, i % 6 ? 1 : 1.7);
+    }
+    for (let i = 0; i < 34; i++) {
+      const y = 44 + (i * 71) % 754;
+      g.fillStyle = 'rgba(232,220,200,.52)'; g.fillRect(18, y, i % 3 ? 2 : 4, 2);
+      g.fillRect(520 - (i % 3 ? 0 : 2), y + 11, 2, 2);
+    }
+    g.strokeStyle = '#D4A84B'; g.lineWidth = 1.5; g.strokeRect(31, 31, 478, 798);
+    function write(value, x, y, size, color, align, maxWidth, weight, family) {
+      g.fillStyle = color || '#F0E6D3'; g.font = (weight || '400') + ' ' + size + 'px ' + (family || monoFamily);
+      g.textAlign = align || 'left'; g.fillText(String(value), x, y, maxWidth || 440);
+    }
+    function stroke(color, width) { g.strokeStyle = color; g.lineWidth = width || 1; g.stroke(); }
+    function routeCircle(x, y, radius, color, width) {
+      g.beginPath(); g.arc(x, y, radius, 0, Math.PI * 2); stroke(color, width || 1.2);
+    }
+    write('CHASE THE MOON', 48, 68, 17, '#E8C878', 'left', 260, '400', displayFamily);
+    write(date || mission, 492, 68, 14, '#D4A84B', 'right', 190);
+    g.beginPath(); g.moveTo(48, 88); g.lineTo(492, 88); stroke('#D4A84B', 1);
+    write(daily ? '每日航线' : r.title, 49, 137, 37, '#D4A84B', 'left', 430, '700', titleFamily);
+    write(daily ? '每日航线' : r.title, 47, 135, 37, '#F0E6D3', 'left', 430, '700', titleFamily);
+    write(daily ? 'DAILY ROUTE / NEAR EARTH' : 'MISSION LOG / ' + mission, 50, 169, 16, '#E8C878', 'left', 430, '400', displayFamily);
+    g.beginPath(); g.ellipse(270, 329, 205, 119, -.18, 0, Math.PI * 2); stroke('rgba(212,168,75,.55)', 1.5);
+    g.beginPath(); g.ellipse(270, 329, 165, 143, .47, 0, Math.PI * 2); stroke('rgba(212,168,75,.24)', 1);
+    g.beginPath(); g.moveTo(118, 404); g.quadraticCurveTo(163, 198, 421, 241); stroke('#D4A84B', 4);
+    g.setLineDash([6, 8]); g.beginPath(); g.moveTo(118, 404); g.quadraticCurveTo(212, 218, 421, 241); stroke('#F0E6D3', 1.4); g.setLineDash([]);
+    [[232, 272], [292, 247], [348, 238]].forEach(point => {
+      g.beginPath(); g.moveTo(point[0], point[1] - 7); g.lineTo(point[0] + 7, point[1]);
+      g.lineTo(point[0], point[1] + 7); g.lineTo(point[0] - 7, point[1]); g.closePath(); g.fillStyle = '#E8C878'; g.fill();
+    });
+    routeCircle(118, 404, 84, '#D4A84B', 1.4); routeCircle(421, 241, 71, '#D4A84B', 1.3);
+    if (ART.earth) g.drawImage(ART.earth, 55, 341, 126, 126);
+    else { g.beginPath(); g.arc(118, 404, 63, 0, Math.PI * 2); g.fillStyle = '#3D8B7A'; g.fill(); }
+    if (ART.moon) g.drawImage(ART.moon, 361, 181, 120, 120);
+    else { g.beginPath(); g.arc(421, 241, 60, 0, Math.PI * 2); g.fillStyle = '#D4A84B'; g.fill(); }
+    write('SOL III / EARTH', 52, 492, 12, '#C5B89A');
+    write('TARGET / LUNA', 492, 321, 12, '#C5B89A', 'right', 160);
+    g.fillStyle = '#D97B3A'; g.fillRect(48, 521, 62, 5);
+    write(daily ? 'SCORE / 今日得分' : 'MISSION TIME / 通关用时', 48, 548, 13, '#D4A84B');
+    write(score, 45, 643, daily ? 94 : 78, '#E8C878', 'left', 340, '700', monoFamily);
+    write(daily ? ratingText : r.subtitle, 50, 680, 18, '#F0E6D3', 'left', 330, '400', titleFamily);
+    routeCircle(420, 602, 58, '#D4A84B', 1.5); routeCircle(420, 602, 49, 'rgba(232,200,120,.55)', 1);
+    for (let i = 0; i < 12; i++) {
+      const a = i * Math.PI / 6;
+      g.beginPath(); g.moveTo(420 + Math.cos(a) * 51, 602 + Math.sin(a) * 51);
+      g.lineTo(420 + Math.cos(a) * 57, 602 + Math.sin(a) * 57); stroke('#D4A84B', 1);
+    }
+    write(daily ? (rating === 'none' ? '—' : rating === 'gold' ? '金' : rating === 'silver' ? '银' : '铜') : mission,
+      420, 610, daily ? 40 : 25, '#E8C878', 'center', 82, '700', titleFamily);
+    write(daily ? 'RATING' : 'MISSION', 420, 638, 10, '#C5B89A', 'center', 80);
+    g.fillStyle = '#D97B3A'; g.fillRect(48, 718, 444, 8);
+    write(daily ? time + ' / ' + (r.completed ? 'FULL ROUTE' : 'PARTIAL ROUTE') :
+      (r.abilityText.indexOf('本局新获得') >= 0 ? r.abilityText : r.completed ? '航程已完成' : '航程未完成'),
+      48, 756, 14, '#E8C878', 'left', 440);
+    write('本机航行纪录', 48, 800, 12, '#C5B89A', 'left', 200);
+    write('SOL III  /  AD LUNAM', 492, 800, 12, '#C5B89A', 'right', 230);
     g.restore();
   }
   function getView() {

@@ -97,7 +97,8 @@ test('advertising busy state keeps decline/retry/home routes usable', () => {
 
 test('card viewport is clear, share prose toggles locally, new screens reset local state', () => {
   const { ui, drawn } = setup();
-  assert.ok(SHARE_CARD_RECT.y + SHARE_CARD_RECT.h < 310);
+  assert.ok(SHARE_CARD_RECT.w >= 200);
+  assert.ok(SHARE_CARD_RECT.y + SHARE_CARD_RECT.h < 360);
   const view = { screen: 'card', share: { text: '重聚，开始下一次追逐。' } };
   ui.drawOverlay(view);
   assert.equal(drawn.includes(view.share.text), false);

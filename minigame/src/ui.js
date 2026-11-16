@@ -4,7 +4,7 @@ const { CONTROL_GEOMETRY: CONTROL } = require('./input');
 const W = 270;
 const H = 480;
 const MAP_NODES = Object.freeze([{ x: 64, y: 108 }, { x: 188, y: 160 }, { x: 82, y: 220 }, { x: 190, y: 276 }]);
-const SHARE_CARD_RECT = Object.freeze({ x: 45, y: 20, w: 180, h: 180 * 860 / 540 });
+const SHARE_CARD_RECT = Object.freeze({ x: 31, y: 12, w: 208, h: 208 * 860 / 540 });
 const COLOR = Object.freeze({
   paper: '#E8DCC8', cream: '#F0E6D3', dim: '#C5B89A', gold: '#D4A84B',
   bright: '#E8C878', navy: '#0C1D30', play: '#122336', ink: '#0A1420',
@@ -132,10 +132,11 @@ function createUI(options) {
         ctx.imageSmoothingEnabled = true;
         ctx.drawImage(assets.coverMoon, mx - 37.8, my - 37.8, 75.6, 75.6);
       }
-    } else if (view.screen === 'menu' || view.screen === 'title' || view.screen === 'classic') {
+    } else if (view.screen === 'menu' || (view.screen === 'title' && !view.v2) || view.screen === 'classic') {
       rect(0, 0, W, H, COLOR.navy);
       fitImage(assets.menu);
     } else if (['map', 'growth', 'dailyBrief', 'storageError'].indexOf(view.screen) !== -1 ||
+        (view.screen === 'title' && view.v2) ||
         (view.screen === 'result' && view.v2 && view.v2.mode !== 'classic')) {
       rect(0, 0, W, H, '#0E1C2C');
       sparseStars(10, 96, 250, 205);
@@ -214,21 +215,70 @@ function createUI(options) {
   function levelText(level) { return ['未获得', 'Ⅰ', 'Ⅱ', 'Ⅲ'][level] || '未获得'; }
   function drawHub(view) {
     const hub = view.v2.hub || {};
-    text('任务台', 135, 39, 22, COLOR.cream, 'center', 'title', '700');
-    text('循光启程', 135, 69, 11, COLOR.bright, 'center', 'body');
-    telemetry('SOL III', 'FOLLOW THE LIGHT', 17, 165);
-    rect(0, 272, W, 208, COLOR.paper);
-    line(10, 273, 260, 273, COLOR.ink, 1);
-    text(hub.complete ? '第一章已完成' : (hub.nextName || '追寻月亮的光辉'), 20, 287, 11, COLOR.ink, 'left', 'body', '700', 158);
-    text('成长点 ' + (hub.points || 0), 250, 287, 10, COLOR.ink, 'right', 'body');
-    button(hub.complete ? '每日航行' : '继续第 ' + levelNumber(hub.nextId) + ' 关',
-      hub.complete ? 'openDaily' : 'continueCampaign', 20, 301, 230, 38, { paper: true, primary: true, size: 13 });
-    button('主线航图', 'openCampaign', 20, 350, 72, 35, { paper: true, size: 11 });
-    button('能力成长', 'openGrowth', 99, 350, 72, 35, { paper: true, size: 11 });
-    button(hub.dailyUnlocked ? '每日航行' : '每日 · L04', 'openDaily', 178, 350, 72, 35, { paper: true, size: 10 });
-    button('经典航行', 'openClassic', 20, 396, 230, 34, { paper: true, size: 11 });
-    button('声音', 'toggleSound', 20, 440, 110, 32, { paper: true, led: !!view.sound, size: 10 });
-    button('返回封面', 'openCover', 140, 440, 110, 32, { paper: true, size: 10 });
+    const completed = hub.complete ? 4 : Math.max(0, Number(levelNumber(hub.nextId)) - 1);
+    rect(0, 0, W, H, COLOR.navy);
+    sparseStars(10, 52, 250, 327);
+    line(16, 14, 254, 14, COLOR.gold, .7);
+    text('SOL III / NAVIGATION DESK', 16, 25, 6.3, COLOR.gold);
+    text('FLIGHT LOG', 254, 20, 5.5, COLOR.dim, 'right');
+    text(String(view.v2.daily && view.v2.daily.date || '').replace(/-/g, '.'), 254, 29, 6.2, COLOR.bright, 'right');
+    text('逐月工作台', 16, 44, 21, COLOR.cream, 'left', 'title', '700');
+    text('CH. I / ' + completed + ' OF 04', 18, 63, 5.8, COLOR.gold);
+    circle(135, 111, 62, null, 'rgba(212,168,75,.18)', .6);
+    ctx.beginPath(); ctx.ellipse(135, 112, 94, 37, -.28, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(212,168,75,.32)'; ctx.lineWidth = .6; ctx.stroke();
+    ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(54, 143); ctx.quadraticCurveTo(105, 62, 214, 76);
+    ctx.strokeStyle = COLOR.bright; ctx.lineWidth = .8; ctx.stroke(); ctx.setLineDash([]);
+    [118, 153, 181].forEach((x, index) => {
+      const y = [86, 72, 68][index];
+      ctx.beginPath(); ctx.moveTo(x, y - 2); ctx.lineTo(x + 2, y); ctx.lineTo(x, y + 2); ctx.lineTo(x - 2, y); ctx.closePath();
+      ctx.fillStyle = COLOR.bright; ctx.fill();
+    });
+    circle(54, 140, 29, null, 'rgba(232,200,120,.45)', .6);
+    circle(214, 76, 24, null, 'rgba(232,200,120,.35)', .6);
+    if (assets.earth && assets.earth.width) {
+      ctx.imageSmoothingEnabled = true; ctx.drawImage(assets.earth, 34, 120, 40, 40);
+    } else circle(54, 140, 20, COLOR.teal, COLOR.cream, .6);
+    if (assets.moon && assets.moon.width) {
+      ctx.imageSmoothingEnabled = true; ctx.drawImage(assets.moon, 198, 60, 32, 32);
+    } else circle(214, 76, 16, COLOR.gold, COLOR.bright, .6);
+    text('SOL III', 54, 164, 5.4, COLOR.dim, 'center');
+    text('TARGET / LUNA', 214, 103, 5.2, COLOR.dim, 'center');
+    text('大成长线 / ' + (hub.complete ? '第一章已完成' : '当前航程'), 18, 176, 6.4, COLOR.dim);
+    text(hub.complete ? '第一章 · 循光启程' : '继续 ' + (hub.nextId || 'L01') + ' · ' + (hub.nextName || '余辉'),
+      18, 190, 13, COLOR.cream, 'left', 'title', '700', 190);
+    circle(235, 183, 15, null, COLOR.gold, .7);
+    text('→', 235, 183, 15, COLOR.bright, 'center');
+    touchRegion(hub.complete ? 'openCampaign' : 'continueCampaign', null, 16, 165, 238, 37);
+    line(16, 202, 254, 202, COLOR.gold, .6);
+    for (let i = 0; i < 4; i++) rect(16 + i * 60.5, 205, 56, 2.5, i < completed ? COLOR.gold : null, COLOR.gold, .5);
+    function channel(title, description, data, value, y, primary, active) {
+      const ink = primary ? COLOR.ink : COLOR.cream;
+      if (primary) rect(14, y, 242, 46, COLOR.paper, null);
+      text(primary ? '02' : title === '无尽追寻' ? '03' : '04', 22, y + 10, 5.5, primary ? '#725722' : COLOR.gold);
+      text(title, 45, y + 17, 12.5, ink, 'left', 'title', '700');
+      text(description, 45, y + 33, 6.4, primary ? '#514A3D' : COLOR.dim, 'left', 'body', '400', 148);
+      text(data, 250, y + 13, 5.4, primary ? '#725722' : COLOR.gold, 'right');
+      text(value, 250, y + 31, 10, ink, 'right');
+      if (primary) rect(224, y, 32, 2, COLOR.rust);
+      line(16, y + 46, 254, y + 46, primary ? COLOR.gold : 'rgba(212,168,75,.46)', primary ? 1.5 : .6);
+      if (active) touchRegion('openDaily', null, 14, y, 242, 46);
+    }
+    channel('每日航线', hub.dailyUnlocked ? '今日航道已就绪 · 可反复精进' : '完成 L04 后开放',
+      hub.dailyUnlocked ? 'ROUTE / A' : 'LOCKED', hub.dailyUnlocked ? '150 S' : 'L04', 209, true, hub.dailyUnlocked);
+    channel('无尽追寻', '后续模式 · 尚未开放', 'FUTURE', '待开放', 258, false, false);
+    channel('星空冥想', '后续模式 · 尚未开放', 'LOW SIGNAL', '◌', 306, false, false);
+    line(16, 374, 254, 374, 'rgba(212,168,75,.35)', .5);
+    text('PERMANENT GROWTH', 16, 389, 5.8, COLOR.gold);
+    text('成长点 ' + (hub.points || 0), 254, 389, 7.2, COLOR.bright, 'right');
+    line(16, 433, 254, 433, 'rgba(212,168,75,.35)', .5);
+    [
+      ['航图', 'openCampaign', 27], ['成长', 'openGrowth', 81], ['经典', 'openClassic', 135],
+      [view.sound ? '声音 · 开' : '声音 · 关', 'toggleSound', 189], ['封面', 'openCover', 243]
+    ].forEach(entry => {
+      text(entry[0], entry[2], 455, 7.2, COLOR.dim, 'center', 'body');
+      touchRegion(entry[1], null, entry[2] - 20, 438, 40, 34);
+    });
   }
   function drawMap(view) {
     const map = view.v2.map || {};
@@ -316,49 +366,67 @@ function createUI(options) {
     }
     button('回任务台', 'backToHub', 20, 447, 230, 32, { size: 11 });
   }
-  function chapterVignette(y, height) {
-    rect(18, y, 234, height, '#15202E');
-    sparseStars(22, y + 5, 224, height - 10);
-    ctx.save(); ctx.beginPath(); ctx.rect(18, y, 234, height); ctx.clip();
-    ctx.beginPath(); ctx.ellipse(128, y + height + 16, 122, height + 5, -.25, Math.PI, Math.PI * 2);
-    ctx.lineWidth = 1; ctx.strokeStyle = COLOR.gold; ctx.stroke();
-    [0, 1, 2, 3, 4].forEach(index => {
-      const x = 61 + index * 31; const sy = y + 53 - Math.sin(index * .57) * 23;
-      ctx.beginPath(); ctx.moveTo(x, sy - 3); ctx.lineTo(x + 3, sy); ctx.lineTo(x, sy + 3); ctx.lineTo(x - 3, sy); ctx.closePath();
+  function routeVignette(y, height) {
+    line(16, y, 254, y, COLOR.gold, .8);
+    line(16, y + height, 254, y + height, COLOR.gold, .8);
+    rect(16, y + height - 2, 48, 2, COLOR.rust);
+    ctx.save(); ctx.beginPath(); ctx.rect(16, y, 238, height); ctx.clip();
+    sparseStars(20, y + 7, 230, height - 14);
+    for (let i = 0; i < 150; i++) {
+      const gx = 18 + ((i * 73 + 17) % 229) / 229 * 234;
+      const gy = y + 3 + ((i * 47 + 29) % 151) / 151 * (height - 6);
+      rect(gx, gy, i % 7 ? .45 : .8, i % 7 ? .45 : .8, i % 7 ? 'rgba(240,230,211,.08)' : 'rgba(212,168,75,.17)');
+    }
+    ctx.beginPath(); ctx.ellipse(135, y + 78, 113, 55, -.22, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(212,168,75,.32)'; ctx.lineWidth = .7; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(135, y + 78, 88, 86, .55, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(212,168,75,.17)'; ctx.lineWidth = .6; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(58, y + 119); ctx.quadraticCurveTo(87, y + 13, 211, y + 43);
+    ctx.strokeStyle = COLOR.gold; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(58, y + 119); ctx.quadraticCurveTo(116, y + 30, 211, y + 43);
+    ctx.strokeStyle = COLOR.cream; ctx.lineWidth = .7; ctx.stroke(); ctx.setLineDash([]);
+    [[116, 54], [151, 40], [181, 38]].forEach(point => {
+      const px = point[0], py = y + point[1];
+      ctx.beginPath(); ctx.moveTo(px, py - 3); ctx.lineTo(px + 3, py); ctx.lineTo(px, py + 3); ctx.lineTo(px - 3, py); ctx.closePath();
       ctx.fillStyle = COLOR.bright; ctx.fill();
     });
+    circle(58, y + 119, 39, null, COLOR.gold, .8);
+    circle(211, y + 43, 34, null, COLOR.gold, .7);
     ctx.imageSmoothingEnabled = true;
-    if (assets.earth && assets.earth.width > 0 && assets.earth.height > 0) {
-      ctx.drawImage(assets.earth, 34, y + height - 41, 28, 28);
-    } else {
-      circle(48, y + height - 27, 12, COLOR.teal, COLOR.cream, .6);
-      line(37, y + height - 28, 59, y + height - 28, COLOR.cream, .5);
-    }
-    if (assets.moon && assets.moon.width > 0 && assets.moon.height > 0) {
-      ctx.drawImage(assets.moon, 209, y + 8, 28, 28);
-    } else {
-      circle(223, y + 22, 12, COLOR.gold); circle(225, y + 20, 5, '#BE913E');
-    }
+    if (assets.earth && assets.earth.width) ctx.drawImage(assets.earth, 26, y + 87, 64, 64);
+    else circle(58, y + 119, 32, COLOR.teal, COLOR.cream, .8);
+    if (assets.moon && assets.moon.width) ctx.drawImage(assets.moon, 184, y + 16, 54, 54);
+    else circle(211, y + 43, 27, COLOR.gold, COLOR.bright, .8);
+    text('A / NEAR EARTH', 22, y + 14, 5.6, COLOR.gold);
+    text('LUNA', 231, y + 91, 5.4, COLOR.dim, 'center');
     ctx.restore();
   }
   function drawDaily(view) {
     const daily = view.v2.daily || {};
-    text('每日航行', 135, 33, 22, COLOR.cream, 'center', 'title', '700');
-    text((daily.date || '') + '   A · ' + (daily.name || '近地航行'), 135, 63, 10, COLOR.bright, 'center', 'body');
-    chapterVignette(84, 103);
-    ['150 秒有效航行，完成三段航道', '月辉 +10 · 完成一段 +100 · 技巧门 +50', '星尘补充质量，喷射帮助换位'].forEach((value, index) =>
-      text(value, 22, 204 + index * 18, 10, COLOR.cream, 'left', 'body', '400', 226));
-    line(20, 255, 250, 255, COLOR.gold);
-    text(daily.unlocked ? '铜 400 / 银 650 / 金 850' : '完成 L04 后开放近地航行', 22, 271, 11, COLOR.bright, 'left', 'body');
-    text('今日剩余成长奖励  ' + (daily.remainingRewards || 0) + ' 点', 22, 291, 10, COLOR.cream, 'left', 'body');
-    text('B 池需完成 L08 · C 池需完成 L12', 22, 313, 10, COLOR.dim, 'left', 'body');
-    const rating = { bronze: '铜', silver: '银', gold: '金', none: '未达标' }[daily.rating];
-    if (daily.unlocked && rating) text('评级 ' + rating, 248, 271, 10, COLOR.dim, 'right', 'body');
-    text('今日最佳  ' + (daily.bestText || '暂无成绩'), 22, 337, 11, COLOR.cream, 'left', 'body', '400', 226);
-    text(daily.bestAbilitiesText || '首次完成后记录本局能力', 22, 356, 10, COLOR.dim, 'left', 'body', '400', 226);
-    lines(daily.historyText || ('仅存本机 · 规则 ' + (daily.version || 'V2')), 22, 377, 226, 10, COLOR.dim, 13, 'left', 'body', 2);
-    button('开始每日航行', 'startDaily', 20, 406, 230, 34, { primary: true, size: 12, disabled: !daily.unlocked });
-    button('回任务台', 'backToHub', 20, 448, 230, 32, { size: 11 });
+    const bestScore = typeof daily.bestScore === 'number' ? daily.bestScore : null;
+    const rating = { bronze: '铜级', silver: '银级', gold: '金级', none: '尚未航行' }[daily.rating] || '尚未航行';
+    const target = bestScore === null || daily.rating === 'none' ? '下一目标 · 铜级 400' :
+      daily.rating === 'bronze' ? '下一目标 · 银色 650' : daily.rating === 'silver' ? '下一目标 · 金色 850' : '金色已达成 · 继续刷新纪录';
+    text('← 返回工作台', 16, 19, 8, COLOR.dim, 'left', 'body');
+    touchRegion('backToHub', null, 10, 5, 86, 28);
+    text('DAILY ROUTE / ' + (daily.date || ''), 16, 40, 6.3, COLOR.gold);
+    text('每日航线', 16, 62, 24, COLOR.cream, 'left', 'title', '700');
+    text('A / ' + (daily.name || '近地航行'), 16, 80, 7.5, COLOR.bright);
+    routeVignette(92, 156);
+    text('航行时长', 16, 270, 7.2, COLOR.dim);
+    text('150', 16, 298, 32, COLOR.cream, 'left', 'body', '700');
+    text('秒 / 三段航道', 76, 301, 7.5, COLOR.gold);
+    text('今日最佳', 254, 270, 7.2, COLOR.dim, 'right');
+    text(bestScore === null ? '—' : String(bestScore), 254, 298, 30, bestScore === null ? COLOR.dim : COLOR.bright, 'right', 'body', '700');
+    text(bestScore === null ? '等待首航' : rating, 254, 317, 7.2, COLOR.dim, 'right');
+    line(16, 334, 254, 334, 'rgba(212,168,75,.46)', .6);
+    if (daily.unlocked) {
+      text(target, 16, 352, 9.2, COLOR.bright);
+      text((daily.remainingRewards || 0) > 0 ? '今日可获成长 ' + daily.remainingRewards + ' 点' : '今日成长奖励已领取',
+        16, 371, 7.2, COLOR.dim);
+    } else text('完成 L04 · 第一脉冲后开放', 16, 352, 9.2, COLOR.bright);
+    button(daily.unlocked ? (bestScore === null ? '开始每日航线' : '再次航行') : '尚未开放',
+      'startDaily', 20, 420, 230, 40, { primary: true, size: 12, disabled: !daily.unlocked });
   }
   function drawStorageError() {
     panelHeading('存档暂时无法读取', '本机进度尚未载入');
@@ -557,12 +625,10 @@ function createUI(options) {
   function drawCard(view) {
     // The entry point draws core.drawShareCard into SHARE_CARD_RECT immediately
     // before this overlay. Keep this rectangle transparent and full-resolution.
-    rect(SHARE_CARD_RECT.x - .7, SHARE_CARD_RECT.y - .7, SHARE_CARD_RECT.w + 1.4,
-      SHARE_CARD_RECT.h + 1.4, null, COLOR.gold, .7);
-    text('系统截屏即可分享 · 无外链', 135, 323, 8, COLOR.dim, 'center', 'body');
+    text('系统截屏即可分享 · 无外链', 135, 356, 8, COLOR.dim, 'center', 'body');
     if (shareTextVisible) {
-      rect(18, 340, 234, 77, COLOR.navy, COLOR.gold, .6);
-      lines(view.share && view.share.text, 27, 352, 216, 8, COLOR.cream, 12, 'left', 'body', 6);
+      rect(18, 364, 234, 55, COLOR.navy, COLOR.gold, .6);
+      lines(view.share && view.share.text, 27, 375, 216, 7.2, COLOR.cream, 9.5, 'left', 'body', 5);
     }
     button(shareTextVisible ? '收起分享文案' : '查看分享文案', 'uiToggleShareText', 22, 427, 137, 32, { size: 9 });
     button('返回结算', 'backFromCard', 167, 427, 81, 32, { size: 8.5 });

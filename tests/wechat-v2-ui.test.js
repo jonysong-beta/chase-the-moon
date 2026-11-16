@@ -34,21 +34,29 @@ function abilities(jet) {
   { id: 'sail', name: '引力帆', level: 0, source: 'L10 获得 · 后续航程', effect: '沿引力井外缘蓄能借力', canUpgrade: false }];
 }
 
-test('hub recommends the next available level, then daily after the first chapter', () => {
+test('unified hub keeps one daily channel and reserves future modes without fake actions', () => {
   const { ui, values } = setup();
   const state = view('title', { hub: { nextId: 'L02', nextName: '碎石之间', points: 2, dailyUnlocked: false } });
   ui.drawOverlay(state);
-  assert.equal(ui.hitTest(135, 320).action, 'continueCampaign');
-  assert.equal(ui.hitTest(56, 367).action, 'openCampaign');
-  assert.equal(ui.hitTest(135, 367).action, 'openGrowth');
-  assert.equal(ui.hitTest(214, 367).action, 'openDaily');
-  assert.equal(ui.hitTest(135, 413).action, 'openClassic');
-  assert.ok(values().includes('继续第 02 关'));
+  assert.equal(ui.hitTest(135, 176).action, 'continueCampaign');
+  assert.equal(ui.hitTest(135, 232), null);
+  assert.equal(ui.hitTest(27, 455).action, 'openCampaign');
+  assert.equal(ui.hitTest(81, 455).action, 'openGrowth');
+  assert.equal(ui.hitTest(135, 455).action, 'openClassic');
+  assert.equal(ui.hitTest(189, 455).action, 'toggleSound');
+  assert.equal(ui.hitTest(243, 455).action, 'openCover');
+  assert.equal(ui.hitTest(135, 281), null);
+  assert.equal(ui.hitTest(135, 329), null);
+  assert.ok(values().includes('继续 L02 · 碎石之间'));
+  assert.ok(values().includes('每日航线'));
+  assert.ok(values().includes('无尽追寻'));
+  assert.ok(values().includes('星空冥想'));
+  assert.equal(values().filter(value => value === '每日航线').length, 1);
   state.v2.hub.complete = true;
   state.v2.hub.dailyUnlocked = true;
   ui.drawOverlay(state);
-  assert.equal(ui.hitTest(135, 320).action, 'openDaily');
-  assert.equal(ui.hitTest(56, 367).action, 'openCampaign');
+  assert.equal(ui.hitTest(135, 176).action, 'openCampaign');
+  assert.equal(ui.hitTest(135, 232).action, 'openDaily');
 });
 
 test('map permits inspecting locked nodes but does not expose locked or future start actions', () => {
@@ -87,21 +95,29 @@ test('growth upgrades carry the visible level and never offer future or unavaila
   assert.equal(ui.hitTest(135, 420).action, 'upgradeAbility');
 });
 
-test('daily brief explains locked pools and exhausted rewards without adding reward claims', () => {
+test('daily brief leads with route, best and next target while removing reference clutter', () => {
   const { ui, values } = setup();
   const state = view('dailyBrief', { daily: { date: '2026-11-07', pool: 'A', name: '近地航行',
-    unlocked: false, remainingRewards: 5, bestText: '', version: 1 } });
+    unlocked: false, remainingRewards: 5, bestText: '', bestScore: null, version: 1 } });
   ui.drawBackground(state);
   ui.drawOverlay(state);
-  assert.equal(ui.hitTest(135, 423), null);
-  assert.ok(values().includes('完成 L04 后开放近地航行'));
-  assert.ok(values().includes('B 池需完成 L08 · C 池需完成 L12'));
+  assert.equal(ui.hitTest(135, 440), null);
+  assert.equal(ui.hitTest(60, 19).action, 'backToHub');
+  assert.equal(ui.hitTest(135, 464), null);
+  assert.ok(values().includes('每日航线'));
+  assert.ok(values().includes('完成 L04 · 第一脉冲后开放'));
+  assert.ok(!values().some(value => /月辉 \+10|B 池|SEED|仅存本机|喷射 Ⅱ|LOCAL FLIGHT LOG/.test(value)));
   state.v2.daily.unlocked = true;
   state.v2.daily.remainingRewards = 0;
+  state.v2.daily.bestScore = 650;
+  state.v2.daily.bestText = '650 分';
+  state.v2.daily.rating = 'silver';
   ui.drawOverlay(state);
-  assert.equal(ui.hitTest(135, 423).action, 'startDaily');
-  assert.ok(values().includes('今日剩余成长奖励  0 点'));
-  assert.equal(ui.hitTest(135, 291), null);
+  assert.equal(ui.hitTest(135, 440).action, 'startDaily');
+  assert.ok(values().includes('650'));
+  assert.ok(values().includes('下一目标 · 金色 850'));
+  assert.ok(values().includes('今日成长奖励已领取'));
+  assert.ok(!values().some(value => /世界位置|好友位置|02 \/ 128/.test(value)));
 });
 
 test('grant layer requires saving and suppresses stale controls and toast instructions', () => {
@@ -208,16 +224,24 @@ test('storage read errors expose only retry and cover, including hub error fallb
 test('main new-screen touch areas retain 44 CSS pixels at phone and tablet scales', () => {
   for (const scale of [320 / 270, 360 / 270, 390 / 270, 430 / 270, 740 / 480]) {
     const { ui } = setup(scale);
-    ui.drawOverlay(view('title', { hub: { nextId: 'L01' } }));
+    ui.drawOverlay(view('title', { hub: { nextId: 'L01', dailyUnlocked: true } }));
     const half = 22 / scale - .01;
-    for (const center of [{ x: 56, y: 367.5, action: 'openCampaign' }, { x: 135, y: 367.5, action: 'openGrowth' },
-      { x: 214, y: 367.5, action: 'openDaily' }, { x: 135, y: 413, action: 'openClassic' }]) {
+    for (const center of [{ x: 27, y: 455, action: 'openCampaign' }, { x: 81, y: 455, action: 'openGrowth' },
+      { x: 135, y: 455, action: 'openClassic' }, { x: 189, y: 455, action: 'toggleSound' },
+      { x: 243, y: 455, action: 'openCover' }, { x: 135, y: 232, action: 'openDaily' }]) {
       for (const offset of [{ x: -half, y: 0 }, { x: half, y: 0 }, { x: 0, y: -half }, { x: 0, y: half }]) {
         assert.equal(ui.hitTest(center.x + offset.x, center.y + offset.y).action, center.action);
       }
     }
-    // The gaps stay inert rather than choosing a neighboring row.
-    assert.equal(ui.hitTest(135, 390), null);
-    assert.equal(ui.hitTest(135, 434), null);
+    // Future channels and the gaps between utility actions stay inert.
+    assert.equal(ui.hitTest(135, 281), null);
+    assert.equal(ui.hitTest(135, 329), null);
+    assert.equal(ui.hitTest(54, 455), null);
+    ui.drawOverlay(view('dailyBrief', { daily: { unlocked: true, remainingRewards: 5 } }));
+    for (const center of [{ x: 135, y: 440, action: 'startDaily' }, { x: 60, y: 19, action: 'backToHub' }]) {
+      for (const offset of [{ x: -half, y: 0 }, { x: half, y: 0 }, { x: 0, y: -half }, { x: 0, y: half }]) {
+        assert.equal(ui.hitTest(center.x + offset.x, center.y + offset.y).action, center.action);
+      }
+    }
   }
 });
