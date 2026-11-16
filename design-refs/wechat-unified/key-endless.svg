@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="860" viewBox="0 0 540 860">
+<defs><style>@font-face{font-family:Noto;src:url('../../assets/fonts/NotoSerifSC-700-sub.woff2')}@font-face{font-family:Lime;src:url('../../assets/fonts/Limelight.woff2')}@font-face{font-family:Geist;src:url('../../assets/fonts/GeistMono.woff2')}</style><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency=".74" numOctaves="4" seed="23"/><feColorMatrix type="saturate" values="0"/></filter><filter id="rough"><feTurbulence baseFrequency=".025" numOctaves="3" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2"/></filter><path id="star" d="M0-10 2-2 10 0 2 2 0 10-2 2-10 0-2-2Z"/></defs>
+<rect width="540" height="860" fill="#e8dcc8"/><rect x="16" y="16" width="508" height="828" fill="#08131d"/>
+<text x="46" y="62" font-family="Lime" font-size="17" letter-spacing="2" fill="#e8c878">ENDLESS PURSUIT</text><text x="493" y="62" text-anchor="end" font-family="Geist" font-size="11" fill="#b8ad92">NO FINAL ORBIT</text><path d="M48 82H492" stroke="#8b2e3e" stroke-width="2"/>
+<circle cx="270" cy="178" r="65" fill="none" stroke="#8b2e3e" stroke-width="1.2"/><circle cx="270" cy="178" r="79" fill="none" stroke="#d4a84b" stroke-opacity=".28" stroke-dasharray="2 7"/>
+<image href="../../assets/sprites/moon-dark.webp" x="220" y="128" width="100" height="100"/>
+<g fill="none" stroke="#d4a84b" stroke-opacity=".42" filter="url(#rough)"><path d="M270 210L28 587M270 210L103 587M270 210L179 587M270 210L361 587M270 210L437 587M270 210L512 587"/><ellipse cx="270" cy="272" rx="62" ry="15" stroke-opacity=".38"/><ellipse cx="270" cy="333" rx="105" ry="27" stroke-opacity=".45"/><ellipse cx="270" cy="415" rx="158" ry="42" stroke-opacity=".52"/><ellipse cx="270" cy="522" rx="237" ry="68" stroke="#8b2e3e" stroke-opacity=".7"/></g>
+<path d="M270 217V504" stroke="#f0e6d3" stroke-width="1.3" stroke-dasharray="5 7"/>
+<path d="M270 250l3 3-3 3-3-3ZM270 292l4 4-4 4-4-4ZM270 347l6 6-6 6-6-6ZM270 420l8 8-8 8-8-8Z" fill="#e8c878"/>
+<image href="../../assets/sprites/rock.webp" x="26" y="403" width="115" height="105" transform="rotate(-18 83 455)"/><image href="../../assets/sprites/rock.webp" x="425" y="474" width="89" height="81" transform="rotate(21 469 514)"/>
+<circle cx="270" cy="517" r="88" fill="#08131d" stroke="#e8c878" stroke-width="1.2"/><image href="../../assets/sprites/earth.webp" x="202" y="449" width="136" height="136"/>
+<g fill="#e8c878"><use href="#star" transform="translate(113 179) scale(.55)"/><use href="#star" transform="translate(423 286) scale(.55)"/><use href="#star" transform="translate(154 326) scale(.45)"/><use href="#star" transform="translate(116 559) scale(.5)"/></g>
+<text x="47" y="654" font-family="Noto" font-weight="700" font-size="53" letter-spacing="4" fill="#8b2e3e">无尽追寻</text><text x="45" y="652" font-family="Noto" font-weight="700" font-size="53" letter-spacing="4" fill="#f0e6d3">无尽追寻</text>
+<text x="49" y="697" font-family="Lime" font-size="21" letter-spacing="2" fill="#e8c878">THE TRAIL MUST NOT DIE</text>
+<path d="M48 728H492" stroke="#8b2e3e" stroke-width="2"/><text x="49" y="758" font-family="Geist" font-size="12" fill="#b8ad92">SURVIVE / ADVANCE / REMEMBER</text>
+<rect x="16" y="790" width="508" height="8" fill="#d97b3a"/><text x="48" y="824" font-family="Geist" font-size="10" fill="#b8ad92">SURVIVAL LOG / SOL III</text>
+<rect x="16" y="16" width="508" height="828" filter="url(#noise)" opacity=".09" style="mix-blend-mode:soft-light"/>
+</svg>

@@ -96,7 +96,8 @@ test('platform maps a DPR-capped safe/capsule viewport and keeps letterbox outsi
   assert.ok(Math.abs(center.x - 135) < 1e-9 && Math.abs(center.y - 240) < 1e-9);
   assert.equal(platform.toLogical({ clientX: 0, clientY: 0 }), null);
   await platform.loadAssets();
-  assert.equal(fake.images.length, 9);
+  assert.equal(fake.images.length, 10);
+  assert.ok(fake.images.includes('assets/ui/daily-scenes.webp'));
   assert.ok(fake.images.every(path => !path.includes('?')));
   assert.equal(fake.fontPaths.length, 4);
   assert.equal(platform.fonts.mono, '"local-font-1"');

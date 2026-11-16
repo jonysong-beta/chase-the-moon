@@ -29,15 +29,16 @@ function dailyResult(extra) {
     abilities: { jet: 1, pulse: 0, sail: 0 }, startAbilities: { jet: 1, pulse: 0, sail: 0 }, grants: [] }, extra);
 }
 
-test('first chapter exposes exactly four playable levels and strictly sequential access', () => {
+test('first four lessons stay sequential and chapter two remains locked until L04', () => {
   const clean = Progression.sanitize({});
-  assert.deepEqual(Campaign.LEVELS.map(x => x.id), ['L01', 'L02', 'L03', 'L04']);
+  assert.deepEqual(Campaign.LEVELS.map(x => x.id).slice(0, 4), ['L01', 'L02', 'L03', 'L04']);
+  assert.equal(Campaign.LEVELS.length, 12);
   assert.equal(Campaign.nextLevel(clean).id, 'L01');
   assert.equal(Campaign.unlocked(clean, 'L01'), true);
   assert.equal(Campaign.unlocked(clean, 'L02'), false);
   assert.equal(Campaign.unlocked(clean, 'L05'), false);
-  assert.equal(Campaign.level('L05'), null);
-  assert.equal(Campaign.nextLevel(chapterComplete()), null);
+  assert.equal(Campaign.level('L13'), null);
+  assert.equal(Campaign.nextLevel(chapterComplete()).id, 'L05');
   assert.equal(Campaign.unlocked({ campaignV2: { completed: ['L03', 'L04'] } }, 'L04'), false);
 });
 
@@ -52,7 +53,7 @@ test('campaign schedules preserve teaching order, wide L01 movement and late pas
     assert.ok(events.every((x, i) => !i || x.at >= events[i - 1].at));
     assert.ok(Math.max(...events.map(x => x.at)) + 4 <= metadata.duration);
     assert.equal(new Set(events.map(x => x.id)).size, events.length);
-    assert.equal(events.some(x => ['well', 'qte', 'blood'].includes(x.type)), false);
+    if (metadata.chapter === 1) assert.equal(events.some(x => ['well', 'qte', 'blood'].includes(x.type)), false);
   }
   const two = Campaign.events('L02');
   for (const marker of two.filter(x => x.type === 'group')) {
@@ -89,8 +90,8 @@ test('daily schedule is deterministic, three nonrepeating templates and invarian
   assert.equal(first.templates.length, 3);
   assert.equal(new Set(first.templates.map(x => x.id)).size, 3);
   assert.equal(first.duration, 150);
-  assert.equal(Daily.createRun(start, 'B'), null);
-  assert.equal(Daily.createRun(start, 'C'), null);
+  assert.ok(Daily.createRun(start, 'B'));
+  assert.ok(Daily.createRun(start, 'C'));
   assert.equal(new Set(first.events.map(x => x.id)).size, first.events.length);
   assert.ok(first.events.every((x, i) => !i || x.at >= first.events[i - 1].at));
   for (let day = 0; day < 20; day += 1) {

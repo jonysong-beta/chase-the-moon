@@ -6,7 +6,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist', 'wechat');
-const modules = ['core', 'ui', 'input', 'platform', 'runtime', 'rewarded-ad', 'campaign', 'progression', 'daily'];
+const modules = ['core', 'ui', 'input', 'platform', 'runtime', 'rewarded-ad', 'campaign', 'progression', 'daily', 'endless'];
 const sourceFiles = ['game.js', 'game.json', 'config.js'].concat(modules.map(name => 'src/' + name + '.js'));
 const assets = [
   'ui/cover-bg.webp', 'ui/cover-moon.webp', 'ui/menu.webp',
@@ -16,7 +16,8 @@ const assets = [
   'fonts/Limelight.woff2', 'fonts/JosefinSans-300.woff2'
 ];
 const entries = sourceFiles.map(file => ({ source: 'minigame/' + file, target: file }))
-  .concat(assets.map(file => ({ source: 'assets/' + file, target: 'assets/' + file })));
+  .concat(assets.map(file => ({ source: 'assets/' + file, target: 'assets/' + file })))
+  .concat([{ source: 'minigame/assets/ui/daily-scenes.webp', target: 'assets/ui/daily-scenes.webp' }]);
 
 // Validate the complete source list before touching an existing generated file.
 entries.forEach(entry => {

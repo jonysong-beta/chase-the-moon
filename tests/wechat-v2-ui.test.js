@@ -4,15 +4,16 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createUI } = require('../minigame/src/ui');
 
-function setup(scale) {
-  const drawn = [];
+function setup(scale, assets) {
+  const drawn = [], images = [];
   const ctx = new Proxy({
     fillText(value, x, y) { drawn.push({ value: String(value), x, y }); },
+    drawImage(...args) { images.push(args); },
     measureText(value) { return { width: Array.from(value).length * 10 }; }
   }, { get: (object, key) => key in object ? object[key] : () => {} });
-  const ui = createUI({ ctx, assets: {}, onAction() {} });
+  const ui = createUI({ ctx, assets: assets || {}, onAction() {} });
   ui.setViewport({ scale: scale || 360 / 270 });
-  return { ui, drawn, values: () => drawn.map(entry => entry.value) };
+  return { ui, drawn, images, values: () => drawn.map(entry => entry.value) };
 }
 
 function view(screen, data) {
@@ -46,7 +47,7 @@ test('unified hub keeps one daily channel and reserves future modes without fake
   assert.equal(ui.hitTest(189, 455).action, 'toggleSound');
   assert.equal(ui.hitTest(243, 455).action, 'openCover');
   assert.equal(ui.hitTest(135, 281), null);
-  assert.equal(ui.hitTest(135, 329), null);
+  assert.equal(ui.hitTest(135, 329).action, 'openMeditation');
   assert.ok(values().includes('继续 L02 · 碎石之间'));
   assert.ok(values().includes('每日航线'));
   assert.ok(values().includes('无尽追寻'));
@@ -54,9 +55,21 @@ test('unified hub keeps one daily channel and reserves future modes without fake
   assert.equal(values().filter(value => value === '每日航线').length, 1);
   state.v2.hub.complete = true;
   state.v2.hub.dailyUnlocked = true;
+  state.v2.hub.endlessUnlocked = true;
+  state.v2.hub.endlessBestText = '1:23';
   ui.drawOverlay(state);
   assert.equal(ui.hitTest(135, 176).action, 'openCampaign');
   assert.equal(ui.hitTest(135, 232).action, 'openDaily');
+  assert.equal(ui.hitTest(135, 281).action, 'startEndless');
+});
+
+test('completed hub presents all twelve levels and the reunion instead of the first chapter', () => {
+  const { ui, values } = setup();
+  ui.drawOverlay(view('title', { hub: { complete: true, completedCount: 12, totalLevels: 12,
+    chapter: 3, chapterName: '月之暗面', dailyUnlocked: true, endlessUnlocked: true } }));
+  assert.ok(values().includes('CH. III / 12 OF 12'));
+  assert.ok(values().includes('主线已完成 · 月之重逢'));
+  assert.ok(!values().some(value => value.indexOf('第一章已完成') >= 0));
 });
 
 test('map permits inspecting locked nodes but does not expose locked or future start actions', () => {
@@ -64,8 +77,8 @@ test('map permits inspecting locked nodes but does not expose locked or future s
   const state = view('map', { map: { selectedId: 'L02', levels: mapLevels(), nextChapterText: '后续航程尚未开放' } });
   ui.drawOverlay(state);
   assert.deepEqual(ui.hitTest(135, 420), { action: 'startCampaign', payload: 'L02' });
-  assert.deepEqual(ui.hitTest(82, 220), { action: 'selectLevel', payload: 'L03' });
-  assert.ok(values().includes('L05  后续航程尚未开放'));
+  assert.deepEqual(ui.hitTest(82, 202), { action: 'selectLevel', payload: 'L03' });
+  assert.ok(values().includes('后续航程尚未开放'));
   assert.equal(ui.hitTest(135, 310), null);
   state.v2.map.selectedId = 'L03';
   state.v2.map.levels[1].selected = false;
@@ -80,8 +93,8 @@ test('growth upgrades carry the visible level and never offer future or unavaila
   const state = view('growth', { growth: { points: 8, abilities: abilities() } });
   ui.drawOverlay(state);
   assert.deepEqual(ui.hitTest(135, 420), { action: 'upgradeAbility', payload: { ability: 'jet', expectedLevel: 1 } });
-  assert.equal(ui.hitTest(135, 200), null);
-  assert.equal(ui.hitTest(135, 280), null);
+  assert.equal(ui.hitTest(135, 200).action, 'uiSelectGrowthAbility');
+  assert.equal(ui.hitTest(135, 280).action, 'uiSelectGrowthAbility');
   for (const patch of [{ level: 0, canUpgrade: false }, { level: 1, canUpgrade: false }, { level: 3, canUpgrade: false }]) {
     state.v2.growth.abilities = abilities(patch);
     ui.drawOverlay(state);
@@ -118,6 +131,13 @@ test('daily brief leads with route, best and next target while removing referenc
   assert.ok(values().includes('下一目标 · 金色 850'));
   assert.ok(values().includes('今日成长奖励已领取'));
   assert.ok(!values().some(value => /世界位置|好友位置|02 \/ 128/.test(value)));
+});
+
+test('daily brief draws the approved comic scene asset when loaded', () => {
+  const scene = { width: 888, height: 798 };
+  const { ui, images } = setup(null, { dailyScenes: scene });
+  ui.drawOverlay(view('dailyBrief', { daily: { unlocked: true, remainingRewards: 5 } }));
+  assert.ok(images.some(args => args[0] === scene));
 });
 
 test('grant layer requires saving and suppresses stale controls and toast instructions', () => {
@@ -235,7 +255,7 @@ test('main new-screen touch areas retain 44 CSS pixels at phone and tablet scale
     }
     // Future channels and the gaps between utility actions stay inert.
     assert.equal(ui.hitTest(135, 281), null);
-    assert.equal(ui.hitTest(135, 329), null);
+    assert.equal(ui.hitTest(135, 329).action, 'openMeditation');
     assert.equal(ui.hitTest(54, 455), null);
     ui.drawOverlay(view('dailyBrief', { daily: { unlocked: true, remainingRewards: 5 } }));
     for (const center of [{ x: 135, y: 440, action: 'startDaily' }, { x: 60, y: 19, action: 'backToHub' }]) {

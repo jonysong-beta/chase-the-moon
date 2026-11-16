@@ -3,7 +3,7 @@
 const { CONTROL_GEOMETRY: CONTROL } = require('./input');
 const W = 270;
 const H = 480;
-const MAP_NODES = Object.freeze([{ x: 64, y: 108 }, { x: 188, y: 160 }, { x: 82, y: 220 }, { x: 190, y: 276 }]);
+const MAP_NODES = Object.freeze([{ x: 64, y: 88 }, { x: 188, y: 130 }, { x: 82, y: 202 }, { x: 190, y: 266 }]);
 const SHARE_CARD_RECT = Object.freeze({ x: 31, y: 12, w: 208, h: 208 * 860 / 540 });
 const COLOR = Object.freeze({
   paper: '#E8DCC8', cream: '#F0E6D3', dim: '#C5B89A', gold: '#D4A84B',
@@ -20,6 +20,7 @@ function createUI(options) {
   let boardPage = 0;
   let resultPage = 0;
   let shareTextVisible = false;
+  let selectedGrowthAbility = 'jet', mapChapter = 0;
   let boardPages = 1;
   let resultPages = 1;
   let cssScale = 375 / 270;
@@ -135,7 +136,7 @@ function createUI(options) {
     } else if (view.screen === 'menu' || (view.screen === 'title' && !view.v2) || view.screen === 'classic') {
       rect(0, 0, W, H, COLOR.navy);
       fitImage(assets.menu);
-    } else if (['map', 'growth', 'dailyBrief', 'storageError'].indexOf(view.screen) !== -1 ||
+    } else if (['map', 'growth', 'dailyBrief', 'meditation', 'storageError'].indexOf(view.screen) !== -1 ||
         (view.screen === 'title' && view.v2) ||
         (view.screen === 'result' && view.v2 && view.v2.mode !== 'classic')) {
       rect(0, 0, W, H, '#0E1C2C');
@@ -215,7 +216,8 @@ function createUI(options) {
   function levelText(level) { return ['未获得', 'Ⅰ', 'Ⅱ', 'Ⅲ'][level] || '未获得'; }
   function drawHub(view) {
     const hub = view.v2.hub || {};
-    const completed = hub.complete ? 4 : Math.max(0, Number(levelNumber(hub.nextId)) - 1);
+    const completed = hub.completedCount === undefined ? (hub.complete ? 12 : Math.max(0, Number(levelNumber(hub.nextId)) - 1)) : hub.completedCount;
+    const total = hub.totalLevels || 12, chapter = hub.chapter || 1, roman = ['I', 'II', 'III'][chapter - 1] || 'I';
     rect(0, 0, W, H, COLOR.navy);
     sparseStars(10, 52, 250, 327);
     line(16, 14, 254, 14, COLOR.gold, .7);
@@ -223,7 +225,7 @@ function createUI(options) {
     text('FLIGHT LOG', 254, 20, 5.5, COLOR.dim, 'right');
     text(String(view.v2.daily && view.v2.daily.date || '').replace(/-/g, '.'), 254, 29, 6.2, COLOR.bright, 'right');
     text('逐月工作台', 16, 44, 21, COLOR.cream, 'left', 'title', '700');
-    text('CH. I / ' + completed + ' OF 04', 18, 63, 5.8, COLOR.gold);
+    text('CH. ' + roman + ' / ' + completed + ' OF ' + String(total).padStart(2, '0'), 18, 63, 5.8, COLOR.gold);
     circle(135, 111, 62, null, 'rgba(212,168,75,.18)', .6);
     ctx.beginPath(); ctx.ellipse(135, 112, 94, 37, -.28, 0, Math.PI * 2);
     ctx.strokeStyle = 'rgba(212,168,75,.32)'; ctx.lineWidth = .6; ctx.stroke();
@@ -244,15 +246,16 @@ function createUI(options) {
     } else circle(214, 76, 16, COLOR.gold, COLOR.bright, .6);
     text('SOL III', 54, 164, 5.4, COLOR.dim, 'center');
     text('TARGET / LUNA', 214, 103, 5.2, COLOR.dim, 'center');
-    text('大成长线 / ' + (hub.complete ? '第一章已完成' : '当前航程'), 18, 176, 6.4, COLOR.dim);
-    text(hub.complete ? '第一章 · 循光启程' : '继续 ' + (hub.nextId || 'L01') + ' · ' + (hub.nextName || '余辉'),
+    text('大成长线 / ' + (hub.complete ? '全部航程已完成' : hub.chapterName || '当前航程'), 18, 176, 6.4, COLOR.dim);
+    text(hub.complete ? '主线已完成 · 月之重逢' : '继续 ' + (hub.nextId || 'L01') + ' · ' + (hub.nextName || '余辉'),
       18, 190, 13, COLOR.cream, 'left', 'title', '700', 190);
     circle(235, 183, 15, null, COLOR.gold, .7);
     text('→', 235, 183, 15, COLOR.bright, 'center');
     touchRegion(hub.complete ? 'openCampaign' : 'continueCampaign', null, 16, 165, 238, 37);
     line(16, 202, 254, 202, COLOR.gold, .6);
-    for (let i = 0; i < 4; i++) rect(16 + i * 60.5, 205, 56, 2.5, i < completed ? COLOR.gold : null, COLOR.gold, .5);
-    function channel(title, description, data, value, y, primary, active) {
+    const segmentWidth = (238 - (total - 1) * 4) / total;
+    for (let i = 0; i < total; i++) rect(16 + i * (segmentWidth + 4), 205, segmentWidth, 2.5, i < completed ? COLOR.gold : null, COLOR.gold, .5);
+    function channel(title, description, data, value, y, primary, active, action) {
       const ink = primary ? COLOR.ink : COLOR.cream;
       if (primary) rect(14, y, 242, 46, COLOR.paper, null);
       text(primary ? '02' : title === '无尽追寻' ? '03' : '04', 22, y + 10, 5.5, primary ? '#725722' : COLOR.gold);
@@ -262,12 +265,14 @@ function createUI(options) {
       text(value, 250, y + 31, 10, ink, 'right');
       if (primary) rect(224, y, 32, 2, COLOR.rust);
       line(16, y + 46, 254, y + 46, primary ? COLOR.gold : 'rgba(212,168,75,.46)', primary ? 1.5 : .6);
-      if (active) touchRegion('openDaily', null, 14, y, 242, 46);
+      if (active) touchRegion(action, null, 14, y, 242, 46);
     }
     channel('每日航线', hub.dailyUnlocked ? '今日航道已就绪 · 可反复精进' : '完成 L04 后开放',
-      hub.dailyUnlocked ? 'ROUTE / A' : 'LOCKED', hub.dailyUnlocked ? '150 S' : 'L04', 209, true, hub.dailyUnlocked);
-    channel('无尽追寻', '后续模式 · 尚未开放', 'FUTURE', '待开放', 258, false, false);
-    channel('星空冥想', '后续模式 · 尚未开放', 'LOW SIGNAL', '◌', 306, false, false);
+      hub.dailyUnlocked ? 'ROUTE / ' + (hub.dailyPool || 'A') : 'LOCKED', hub.dailyUnlocked ? '150 S' : 'L04', 209, true, hub.dailyUnlocked, 'openDaily');
+    channel('无尽追寻', hub.endlessUnlocked ? (hub.endlessBestText ? '本机最长追寻' : '随时开始 · 活得越久越好') : '完成 L04 后开放',
+      hub.endlessUnlocked ? (hub.endlessBestText ? 'PERSONAL' : 'SURVIVAL') : 'LOCKED',
+      hub.endlessUnlocked ? (hub.endlessBestText || '∞') : 'L04', 258, false, hub.endlessUnlocked, 'startEndless');
+    channel('星空冥想', '2 / 5 / 10 分钟 · 无成绩', 'QUIET', '◌', 306, false, true, 'openMeditation');
     line(16, 374, 254, 374, 'rgba(212,168,75,.35)', .5);
     text('PERMANENT GROWTH', 16, 389, 5.8, COLOR.gold);
     text('成长点 ' + (hub.points || 0), 254, 389, 7.2, COLOR.bright, 'right');
@@ -282,10 +287,15 @@ function createUI(options) {
   }
   function drawMap(view) {
     const map = view.v2.map || {};
-    const levels = Array.isArray(map.levels) ? map.levels.slice(0, 4) : [];
+    const allLevels = Array.isArray(map.levels) ? map.levels : [];
+    const selectedEntry = allLevels.find(entry => entry.id === map.selectedId);
+    if (!mapChapter) mapChapter = selectedEntry && selectedEntry.chapter || 1;
+    const levels = allLevels.filter(entry => (entry.chapter || 1) === mapChapter).slice(0, 4);
     const completed = levels.filter(entry => entry.completed).length;
-    text('第一章 · 循光启程', 135, 34, 20, COLOR.cream, 'center', 'title', '700');
-    text('主线航图   ' + completed + ' / 4', 135, 61, 10, COLOR.dim, 'center', 'body');
+    text('第 ' + mapChapter + ' 章 · ' + ({ 1: '循光启程', 2: '穿越引力', 3: '月之暗面' }[mapChapter] || '逐月航程'), 135, 34, 20, COLOR.cream, 'center', 'title', '700');
+    text('主线航图   ' + completed + ' / ' + levels.length, 135, 61, 10, COLOR.dim, 'center', 'body');
+    [1, 2, 3].forEach((chapter, index) => button(chapter === 1 ? 'Ⅰ' : chapter === 2 ? 'Ⅱ' : 'Ⅲ', 'uiMapChapter', 162 + index * 34, 72, 28, 22,
+      { primary: chapter === mapChapter, size: 8, payload: chapter }));
     for (let i = 1; i < MAP_NODES.length; i++) {
       const from = MAP_NODES[i - 1]; const to = MAP_NODES[i];
       ctx.setLineDash(levels[i] && levels[i].unlocked ? [] : [3, 5]);
@@ -310,7 +320,7 @@ function createUI(options) {
       touchRegion('selectLevel', entry.id, point.x - 23, point.y - 22, 46, 44);
     });
     const nextChapterText = map.nextChapterText || '后续航程尚未开放';
-    text(nextChapterText.indexOf('L05') === 0 ? nextChapterText : 'L05  ' + nextChapterText, 18, 310, 10, COLOR.dim, 'left', 'body');
+    text(nextChapterText, 18, 310, 10, COLOR.dim, 'left', 'body');
     const selected = levels.find(entry => entry.id === map.selectedId) || levels.find(entry => entry.selected) || levels[0];
     rect(14, 323, 242, 72, 'rgba(10,20,32,.9)');
     line(14, 323, 256, 323, COLOR.gold);
@@ -353,16 +363,17 @@ function createUI(options) {
       text(ability.source, 65, y + 23, 10, COLOR.dim, 'left', 'body', '400', 184);
       lines(ability.effect, 65, y + 41, 184, 10, COLOR.cream, 14, 'left', 'body', 2);
       line(20, y + 70, 250, y + 70, 'rgba(197,184,154,.24)');
+      touchRegion('uiSelectGrowthAbility', ability.id, 20, y, 230, 70);
     });
-    const jet = abilities.find(ability => ability.id === 'jet');
-    if (jet) {
-      lines(jet.level >= 3 ? '喷射已完成强化' : jet.level ? jet.nextEffect : '第 L04 关获得喷射后，可在此强化',
+    const selected = abilities.find(ability => ability.id === selectedGrowthAbility) || abilities[0];
+    if (selected) {
+      lines(selected.level >= 3 ? selected.name + '已完成强化' : selected.level ? selected.nextEffect : selected.source,
         20, 343, 230, 10, COLOR.cream, 14, 'left', 'body', 2);
-      if (jet.level > 0 && jet.level < 3) text('强化至 ' + levelText(jet.level + 1) + ' 需要 ' + jet.cost + ' 成长点', 20, 375, 10, COLOR.bright, 'left', 'body');
+      if (selected.level > 0 && selected.level < 3) text('强化至 ' + levelText(selected.level + 1) + ' 需要 ' + selected.cost + ' 成长点', 20, 375, 10, COLOR.bright, 'left', 'body');
       if (growth.error) text(growth.error, 135, 390, 10, COLOR.bad, 'center', 'body', '400', 230);
-      button(jet.level >= 3 ? '已完成强化' : !jet.level ? '尚未获得喷射' : jet.canUpgrade ? (growth.error ? '重试强化' : '强化喷射') : '成长点不足',
-        'upgradeAbility', 20, 403, 230, 34, { primary: true, size: 12, disabled: !jet.canUpgrade || !jet.level || jet.level >= 3,
-          payload: { ability: 'jet', expectedLevel: jet.level } });
+      button(selected.level >= 3 ? '已完成强化' : !selected.level ? '尚未获得' + selected.name : selected.canUpgrade ? (growth.error ? '重试强化' : '强化' + selected.name) : '成长点不足',
+        'upgradeAbility', 20, 403, 230, 34, { primary: true, size: 12, disabled: !selected.canUpgrade || !selected.level || selected.level >= 3,
+          payload: { ability: selected.id, expectedLevel: selected.level } });
     }
     button('回任务台', 'backToHub', 20, 447, 230, 32, { size: 11 });
   }
@@ -403,6 +414,8 @@ function createUI(options) {
   }
   function drawDaily(view) {
     const daily = view.v2.daily || {};
+    const scenes = assets.dailyScenes && assets.dailyScenes.width ? assets.dailyScenes : null;
+    const offset = scenes ? 18 : 0;
     const bestScore = typeof daily.bestScore === 'number' ? daily.bestScore : null;
     const rating = { bronze: '铜级', silver: '银级', gold: '金级', none: '尚未航行' }[daily.rating] || '尚未航行';
     const target = bestScore === null || daily.rating === 'none' ? '下一目标 · 铜级 400' :
@@ -411,22 +424,82 @@ function createUI(options) {
     touchRegion('backToHub', null, 10, 5, 86, 28);
     text('DAILY ROUTE / ' + (daily.date || ''), 16, 40, 6.3, COLOR.gold);
     text('每日航线', 16, 62, 24, COLOR.cream, 'left', 'title', '700');
-    text('A / ' + (daily.name || '近地航行'), 16, 80, 7.5, COLOR.bright);
-    routeVignette(92, 156);
-    text('航行时长', 16, 270, 7.2, COLOR.dim);
-    text('150', 16, 298, 32, COLOR.cream, 'left', 'body', '700');
-    text('秒 / 三段航道', 76, 301, 7.5, COLOR.gold);
-    text('今日最佳', 254, 270, 7.2, COLOR.dim, 'right');
-    text(bestScore === null ? '—' : String(bestScore), 254, 298, 30, bestScore === null ? COLOR.dim : COLOR.bright, 'right', 'body', '700');
-    text(bestScore === null ? '等待首航' : rating, 254, 317, 7.2, COLOR.dim, 'right');
-    line(16, 334, 254, 334, 'rgba(212,168,75,.46)', .6);
+    text((daily.pool || 'A') + ' / ' + (daily.name || '近地航行'), 16, 80, 7.5, COLOR.bright, 'left', 'body', '400', 120);
+    (daily.pools || []).slice(0, 3).forEach((pool, index) => {
+      button(pool.id, 'selectDailyPool', 150 + index * 38, 68, 34, 22,
+        { primary: pool.id === daily.pool, size: 8, disabled: !pool.unlocked, payload: pool.id });
+    });
+    if (scenes) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(scenes, 37, 92, 196, 196 * 798 / 888);
+    } else routeVignette(92, 156);
+    text('航行时长', 16, 270 + offset, 7.2, COLOR.dim);
+    text('150', 16, 298 + offset, 32, COLOR.cream, 'left', 'body', '700');
+    text('秒 / 三段航道', 76, 301 + offset, 7.5, COLOR.gold);
+    text('今日最佳', 254, 270 + offset, 7.2, COLOR.dim, 'right');
+    text(bestScore === null ? '—' : String(bestScore), 254, 298 + offset, 30, bestScore === null ? COLOR.dim : COLOR.bright, 'right', 'body', '700');
+    text(bestScore === null ? '等待首航' : rating, 254, 317 + offset, 7.2, COLOR.dim, 'right');
+    line(16, 334 + offset, 254, 334 + offset, 'rgba(212,168,75,.46)', .6);
     if (daily.unlocked) {
-      text(target, 16, 352, 9.2, COLOR.bright);
+      text(target, 16, 352 + offset, 9.2, COLOR.bright);
       text((daily.remainingRewards || 0) > 0 ? '今日可获成长 ' + daily.remainingRewards + ' 点' : '今日成长奖励已领取',
-        16, 371, 7.2, COLOR.dim);
-    } else text('完成 L04 · 第一脉冲后开放', 16, 352, 9.2, COLOR.bright);
+        16, 371 + offset, 7.2, COLOR.dim);
+    } else text('完成 L04 · 第一脉冲后开放', 16, 352 + offset, 9.2, COLOR.bright);
     button(daily.unlocked ? (bestScore === null ? '开始每日航线' : '再次航行') : '尚未开放',
       'startDaily', 20, 420, 230, 40, { primary: true, size: 12, disabled: !daily.unlocked });
+  }
+  function drawMeditation(view) {
+    const m = view.meditation || { duration: 300, elapsed: 0, remaining: 300, running: false, completed: false, visualTime: 0 };
+    const t = Number(m.visualTime) || 0, cx = 135, cy = 200;
+    rect(0, 0, W, H, '#10263A');
+    text('← 返回工作台', 16, 19, 8, COLOR.dim, 'left', 'body');
+    touchRegion('backToHub', null, 10, 5, 86, 28);
+    text('QUIET ORBIT / LOW SIGNAL', 16, 40, 6.3, COLOR.gold);
+    text('星空冥想', 16, 62, 24, COLOR.cream, 'left', 'title', '700');
+    text('不必追上风，也不必抵达哪里', 16, 80, 7.2, COLOR.dim);
+    const breathe = .5 + .5 * Math.sin(t * Math.PI / 4);
+    circle(cx, cy, 116, null, 'rgba(212,168,75,' + (.22 + breathe * .2) + ')', .8);
+    circle(cx, cy, 121, null, 'rgba(232,200,120,.4)', 3);
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, 108, 0, Math.PI * 2); ctx.clip();
+    rect(cx - 108, cy - 108, 216, 216, COLOR.navy);
+    for (let i = 0; i < 55; i++) {
+      const x = cx - 103 + (i * 71 % 199) / 199 * 206, y = cy - 102 + (i * 47 % 197) / 197 * 204;
+      rect(x, y, i % 6 ? .55 : 1, i % 6 ? .55 : 1, i % 6 ? 'rgba(240,230,211,.18)' : 'rgba(232,200,120,.5)');
+    }
+    ctx.beginPath(); ctx.ellipse(cx, cy + 12, 115, 45, -.3, 0, Math.PI * 2);
+    ctx.strokeStyle = COLOR.teal; ctx.lineWidth = 5; ctx.globalAlpha = .35; ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.beginPath(); ctx.ellipse(cx, cy + 12, 115, 45, -.3, 0, Math.PI * 2);
+    ctx.strokeStyle = COLOR.teal; ctx.lineWidth = .8; ctx.stroke();
+    [[76, 135], [95, 118], [116, 137], [137, 108]].forEach((point, index, points) => {
+      circle(point[0], point[1], 1.6, COLOR.bright);
+      if (index) line(points[index - 1][0], points[index - 1][1], point[0], point[1], 'rgba(197,184,154,.45)', .5);
+    });
+    circle(174, 158, 50, null, 'rgba(212,168,75,.55)', .8);
+    if (assets.moon && assets.moon.width) {
+      ctx.imageSmoothingEnabled = true; ctx.drawImage(assets.moon, 135, 119, 78, 78);
+    } else circle(174, 158, 39, COLOR.gold, COLOR.bright, .6);
+    const angle = t * .09, ex = cx + Math.cos(angle) * 72, ey = cy + 34 + Math.sin(angle) * 27;
+    circle(ex, ey, 28, null, COLOR.gold, .7);
+    if (assets.earth && assets.earth.width) {
+      ctx.imageSmoothingEnabled = true; ctx.drawImage(assets.earth, ex - 22, ey - 22, 44, 44);
+    } else circle(ex, ey, 22, COLOR.teal, COLOR.cream, .6);
+    ctx.restore();
+    circle(cx, cy, 108, null, 'rgba(212,168,75,.65)', .8);
+    if (m.running) {
+      const remaining = Math.max(0, Math.ceil(Number(m.remaining) || 0));
+      text('剩余 ' + Math.floor(remaining / 60) + ':' + String(remaining % 60).padStart(2, '0'), 135, 337, 9, COLOR.dim, 'center');
+      text(m.phase === 'exhale' ? '缓缓呼气' : '轻轻吸气', 135, 365, 13, COLOR.cream, 'center', 'title', '700');
+      button('结束并返回', 'backToHub', 20, 430, 230, 36, { primary: true, size: 11 });
+      return;
+    }
+    text(m.completed ? '这一刻，不必抵达哪里' : '选择一段安静的时间', 135, 340, 11, COLOR.cream, 'center', 'title', '700');
+    [[120, '02', 20, 59], [300, '05', 99, 137], [600, '10', 178, 215]].forEach(item => {
+      const selected = Number(m.duration) === item[0];
+      button(item[1] + ' 分钟', 'setMeditationDuration', item[2], 374, 77, 32,
+        { primary: selected, size: 9, payload: item[0] });
+    });
+    text('无成绩 · 无排名 · 只保留此刻', 135, 416, 7, COLOR.dim, 'center');
+    button(m.completed ? '再次停留' : '进入安静轨道', 'startMeditation', 20, 430, 230, 36, { primary: true, size: 11 });
   }
   function drawStorageError() {
     panelHeading('存档暂时无法读取', '本机进度尚未载入');
@@ -435,12 +508,12 @@ function createUI(options) {
     button('返回封面', 'openCover', 20, 437, 230, 34, { size: 11 });
   }
   function drawGrant(view) {
-    const run = view.v2.run || {};
+    const run = view.v2.run || {}, ability = run.grantAbility || 'jet', pulse = ability === 'pulse', sail = ability === 'sail';
     rect(0, 0, W, H, 'rgba(10,20,32,.96)');
     text('发现新的航行能力', 135, 83, 13, COLOR.dim, 'center', 'body');
-    abilityMark('jet', 135, 144, true);
-    text('喷射 Ⅰ', 135, 196, 25, COLOR.cream, 'center', 'title', '700');
-    lines('推动摇杆，再点喷射', 135, 240, 224, 12, COLOR.bright, 18, 'center', 'body');
+    abilityMark(ability, 135, 144, true);
+    text(pulse ? '双脉冲 Ⅰ' : sail ? '引力帆 Ⅰ' : '喷射 Ⅰ', 135, 196, 25, COLOR.cream, 'center', 'title', '700');
+    lines(pulse ? '普通恢复期间，再点按一次喷射' : sail ? '沿井外缘移动蓄力，再向外离开' : '推动摇杆，再点喷射', 135, 240, 224, 12, COLOR.bright, 18, 'center', 'body');
     lines('保存后立即获得，后续航行持续生效', 135, 268, 224, 10, COLOR.dim, 16, 'center', 'body', 2);
     if (run.grantError) lines(run.grantError, 135, 306, 224, 10, COLOR.bad, 14, 'center', 'body', 2);
     button(run.grantError ? '重试保存' : '保存并继续', 'claimAbility', 20, 352, 230, 38, { primary: true, size: 12 });
@@ -467,9 +540,15 @@ function createUI(options) {
     const run = view.v2.run || {};
     const hud = view.hud || {};
     const daily = view.v2.mode === 'daily';
+    const endless = view.v2.mode === 'endless';
     text(run.title || (daily ? '每日航行' : '循光启程'), 15, 16, 11, COLOR.bright, 'left', 'body', '700', 188);
     button('暂停', 'pauseRun', 218, 4, 39, 32, { size: 10 });
-    if (daily) {
+    if (endless) {
+      const elapsed = Math.max(0, Math.floor(Number(run.elapsed) || 0));
+      text('生存 ' + Math.floor(elapsed / 60) + ':' + String(elapsed % 60).padStart(2, '0'), 15, 42, 12, COLOR.cream, 'left', 'mono', '700');
+      text('月辉 ' + (run.signals || 0), 255, 42, 11, COLOR.bright, 'right', 'body', '700');
+      text('没有终点', 255, 62, 9, COLOR.dim, 'right', 'body');
+    } else if (daily) {
       const remaining = Math.max(0, Math.ceil(Number(run.remaining) || 0));
       const clock = Math.floor(remaining / 60) + ':' + String(remaining % 60).padStart(2, '0');
       text('剩余 ' + clock, 15, 42, 12, COLOR.cream, 'left', 'mono', '700');
@@ -504,6 +583,11 @@ function createUI(options) {
     const fraction = Math.max(0, Math.min(1, 1 - (Number(run.jetCooldown) || 0) / (Number(run.jetCooldownMax) || .42)));
     ctx.beginPath(); ctx.arc(CONTROL.buttonX, CONTROL.buttonY, CONTROL.buttonRadius + 9, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * fraction);
     ctx.lineWidth = 2; ctx.strokeStyle = fraction >= 1 ? COLOR.bright : COLOR.rust; ctx.stroke();
+    if (Number(run.pulseCooldownMax) > 0) {
+      const pulseFraction = Math.max(0, Math.min(1, 1 - (Number(run.pulseCooldown) || 0) / run.pulseCooldownMax));
+      ctx.beginPath(); ctx.arc(CONTROL.buttonX, CONTROL.buttonY, CONTROL.buttonRadius + 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pulseFraction);
+      ctx.lineWidth = 1; ctx.strokeStyle = pulseFraction >= 1 ? COLOR.teal : COLOR.gold; ctx.stroke();
+    }
     text('喷射 ' + levelText(run.jetLevel), CONTROL.buttonX, 474, 9, COLOR.dim, 'center', 'body');
   }
   function drawManualPause() {
@@ -574,6 +658,7 @@ function createUI(options) {
     const result = view.v2.result || {};
     const rows = Array.isArray(result.rows) ? result.rows : [];
     const awaitingSave = !!(result.savePending || result.saveError);
+    const endless = result.kind === 'endless';
     text(result.title || (result.completed ? '航程已完成' : '本次航行结束'), 135, 39, 22, COLOR.cream, 'center', 'title', '700', 238);
     lines(result.subtitle, 135, 75, 230, 11, COLOR.dim, 15, 'center', 'body', 2);
     line(20, 103, 250, 103, COLOR.gold);
@@ -588,10 +673,10 @@ function createUI(options) {
     if (resultPages > 1) pager(resultPage, resultPages, 'uiResultPage', 244);
     else text(result.recordText || '本次航行记录仅存本机', 135, 255, 10, COLOR.dim, 'center', 'body', '400', 230);
     rect(20, 282, 230, 52, 'rgba(61,139,122,.12)', 'rgba(197,184,154,.4)', .6);
-    text('成长点', 30, 297, 11, COLOR.cream, 'left', 'body');
-    text(awaitingSave ? '待保存' : '+' + (result.reward || 0) + '  /  余额 ' + (result.points || 0), 240, 297, 11,
+    text(endless ? '本机纪录' : '成长点', 30, 297, 11, COLOR.cream, 'left', 'body');
+    text(endless ? (awaitingSave ? '待保存' : result.bestText || '—') : awaitingSave ? '待保存' : '+' + (result.reward || 0) + '  /  余额 ' + (result.points || 0), 240, 297, 11,
       awaitingSave ? COLOR.dim : COLOR.bright, 'right', 'body', '700');
-    text(result.abilityText || '能力成长跨局保留', 30, 318, 10, COLOR.dim, 'left', 'body', '400', 210);
+    text(endless ? (result.newBest ? '新的最长追寻' : '不发放成长点') : result.abilityText || '能力成长跨局保留', 30, 318, 10, COLOR.dim, 'left', 'body', '400', 210);
     if (result.saveError) text(result.saveError, 135, 346, 10, COLOR.bad, 'center', 'body', '400', 230);
     button(result.saveError ? '重试保存' : result.savePending ? '正在保存…' : result.nextLabel || '再来一局',
       result.saveError ? 'retrySave' : 'retry', 20, 358, 230, 36,
@@ -649,7 +734,7 @@ function createUI(options) {
     if (!view || typeof view.screen !== 'string') throw new TypeError('UI view.screen must be a string');
     const overlay = overlayOptions || {};
     if (lastScreen !== view.screen) {
-      boardPage = resultPage = 0; shareTextVisible = false; lastScreen = view.screen;
+      boardPage = resultPage = 0; shareTextVisible = false; mapChapter = 0; lastScreen = view.screen;
     }
     regions = [];
     ctx.save();
@@ -662,6 +747,7 @@ function createUI(options) {
     else if (view.screen === 'map') drawMap(view);
     else if (view.screen === 'growth') drawGrowth(view);
     else if (view.screen === 'dailyBrief') drawDaily(view);
+    else if (view.screen === 'meditation') drawMeditation(view);
     else if (view.screen === 'grant') drawGrant(view);
     else if (view.screen === 'result') { if (expanded) drawV2Result(view); else drawResult(view); }
     else if (view.screen === 'board') drawBoard(view);
@@ -712,6 +798,8 @@ function createUI(options) {
     if (action === 'uiBoardPage') boardPage = Math.max(0, Math.min(boardPages - 1, Number(payload) || 0));
     else if (action === 'uiResultPage') resultPage = Math.max(0, Math.min(resultPages - 1, Number(payload) || 0));
     else if (action === 'uiToggleShareText') shareTextVisible = !shareTextVisible;
+    else if (action === 'uiSelectGrowthAbility') { selectedGrowthAbility = String(payload || 'jet'); return true; }
+    else if (action === 'uiMapChapter') { mapChapter = Number(payload) || 1; return true; }
     else return false;
     return true;
   }

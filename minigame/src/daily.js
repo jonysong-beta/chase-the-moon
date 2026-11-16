@@ -1,9 +1,13 @@
 'use strict';
 
 const RULE_VERSION = 'v2-a1';
+const RULE_VERSION_B = 'v2-b1';
+const RULE_VERSION_C = 'v2-c1';
 const DURATION = 150;
 const SEGMENT_DURATION = 50;
 const TEMPLATE_IDS = Object.freeze(['wide-arc', 'rock-gates', 'supply-fork', 'jet-shift']);
+const TEMPLATE_IDS_B = Object.freeze(['single-well', 'rock-well', 'pulse-zigzag', 'double-well']);
+const TEMPLATE_IDS_C = Object.freeze(['spike-line', 'shock-ring', 'sail-well', 'mixed-tide']);
 
 function dateKey(ms) {
   const date = new Date(Number(ms) + 8 * 60 * 60 * 1000);
@@ -30,10 +34,11 @@ function rng(seed) {
 function createRun(ms, pool) {
   pool = pool || 'A';
   const date = dateKey(ms);
-  if (!date || pool !== 'A') return null;
-  const seed = hash(date + '|' + pool + '|' + RULE_VERSION);
+  if (!date || ['A', 'B', 'C'].indexOf(pool) < 0) return null;
+  const version = pool === 'C' ? RULE_VERSION_C : pool === 'B' ? RULE_VERSION_B : RULE_VERSION;
+  const seed = hash(date + '|' + pool + '|' + version);
   const random = rng(seed);
-  const available = TEMPLATE_IDS.slice();
+  const available = (pool === 'C' ? TEMPLATE_IDS_C : pool === 'B' ? TEMPLATE_IDS_B : TEMPLATE_IDS).slice();
   const templates = [];
   const events = [];
   for (let segment = 0; segment < 3; segment += 1) {
@@ -43,13 +48,23 @@ function createRun(ms, pool) {
     templates.push(Object.freeze({ id: id, mirror: mirror, variant: variant }));
     let serial = 0;
     function add(at, type, lx, ly, extra) {
-      events.push(Object.freeze(Object.assign({ id: 'A-' + segment + '-' + serial++, segment: segment,
+      events.push(Object.freeze(Object.assign({ id: pool + '-' + segment + '-' + serial++, segment: segment,
         at: segment * SEGMENT_DURATION + at, type: type, lx: lx * mirror, ly: ly,
         r: type === 'gate' ? 24 : type === 'dust' ? 8 : 12 }, extra)));
     }
     for (let i = 0; i < 20; i += 1) {
       let x;
-      if (id === 'wide-arc') x = Math.sin(i / 19 * Math.PI * 2) * 0.75;
+      if (pool === 'C') {
+        if (id === 'spike-line') x = Math.floor(i / 5) % 2 ? -0.72 : 0.72;
+        else if (id === 'shock-ring') x = Math.sin(i / 19 * Math.PI * 2) * 0.7;
+        else if (id === 'sail-well') x = Math.sin(i / 19 * Math.PI * 2 + 0.4) * 0.78;
+        else x = Math.floor(i / 4) % 2 ? -0.8 : 0.8;
+      } else if (pool === 'B') {
+        if (id === 'single-well') x = Math.sin(i / 19 * Math.PI * 2) * 0.58;
+        else if (id === 'rock-well') x = Math.floor(i / 5) % 2 ? -0.62 : 0.62;
+        else if (id === 'pulse-zigzag') x = Math.floor(i / 4) % 2 ? -0.78 : 0.78;
+        else x = Math.sin(i / 19 * Math.PI * 2 + 0.5) * 0.78;
+      } else if (id === 'wide-arc') x = Math.sin(i / 19 * Math.PI * 2) * 0.75;
       else if (id === 'rock-gates') x = Math.floor(i / 5) % 2 ? -0.62 : 0.62;
       else if (id === 'supply-fork') x = Math.sin(i / 19 * Math.PI * 2) * 0.55 + variant;
       else x = Math.floor(i / 4) % 2 ? -0.75 : 0.75;
@@ -65,10 +80,18 @@ function createRun(ms, pool) {
     [12, 28].forEach(function (at, i) {
       add(at, 'dust', id === 'supply-fork' ? (i ? -0.75 : 0.75) : 0, 0.45, { massDelta: 5 });
     });
+    if ((pool === 'B' && id !== 'pulse-zigzag') || (pool === 'C' && (id === 'sail-well' || id === 'mixed-tide'))) {
+      (id === 'double-well' || id === 'mixed-tide' ? [16, 32] : [24]).forEach(function (at, index) {
+        const signalIndex = Math.max(0, Math.min(19, Math.round((at - 2) / 2)));
+        const signal = events.filter(function (event) { return event.segment === segment && event.type === 'signal'; })[signalIndex];
+        const safeX = signal.lx / mirror;
+        add(at, 'well', safeX >= 0 ? -0.9 : 0.9, 0.1, { r: 15, pull: 480, killR: 0.42, spin: index % 2 ? -0.6 : 0.6 });
+      });
+    }
     add(42, 'gate', 0.68, 0, { group: segment + 1 });
   }
   events.sort(function (a, b) { return a.at - b.at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0); });
-  return Object.freeze({ date: date, pool: pool, version: RULE_VERSION, seed: seed,
+  return Object.freeze({ date: date, pool: pool, version: version, seed: seed,
     templates: Object.freeze(templates), events: Object.freeze(events), duration: DURATION });
 }
 function count(value, max) { return typeof value === 'number' && isFinite(value) ? Math.max(0, Math.min(max, Math.floor(value))) : 0; }
@@ -92,6 +115,6 @@ function rewardState(data, date) {
   return state;
 }
 
-module.exports = { RULE_VERSION: RULE_VERSION, DURATION: DURATION, SEGMENT_DURATION: SEGMENT_DURATION,
-  TEMPLATE_IDS: TEMPLATE_IDS, dateKey: dateKey, validDate: validDate, createRun: createRun,
+module.exports = { RULE_VERSION: RULE_VERSION, RULE_VERSION_B: RULE_VERSION_B, RULE_VERSION_C: RULE_VERSION_C, DURATION: DURATION, SEGMENT_DURATION: SEGMENT_DURATION,
+  TEMPLATE_IDS: TEMPLATE_IDS, TEMPLATE_IDS_B: TEMPLATE_IDS_B, TEMPLATE_IDS_C: TEMPLATE_IDS_C, dateKey: dateKey, validDate: validDate, createRun: createRun,
   score: score, rating: rating, rewardTiers: rewardTiers, rewardState: rewardState };

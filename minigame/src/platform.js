@@ -7,7 +7,8 @@ const IMAGE_PATHS = Object.freeze({
   cover: 'assets/ui/cover-bg.webp', coverMoon: 'assets/ui/cover-moon.webp', menu: 'assets/ui/menu.webp',
   moon: 'assets/sprites/moon.webp', moonDark: 'assets/sprites/moon-dark.webp',
   earth: 'assets/sprites/earth.webp', well: 'assets/sprites/well.webp',
-  rock: 'assets/sprites/rock.webp', signal: 'assets/sprites/signal.webp'
+  rock: 'assets/sprites/rock.webp', signal: 'assets/sprites/signal.webp',
+  dailyScenes: 'assets/ui/daily-scenes.webp'
 });
 const FONT_PATHS = Object.freeze({
   mono: 'assets/fonts/GeistMono.woff2', title: 'assets/fonts/NotoSerifSC-700-sub.woff2',

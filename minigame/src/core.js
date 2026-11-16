@@ -5,6 +5,7 @@
 const Campaign = require('./campaign');
 const Progression = require('./progression');
 const Daily = require('./daily');
+const Endless = require('./endless');
 function createGame(options) {
   options = options || {};
   const ctx = options.ctx;
@@ -25,7 +26,7 @@ function createGame(options) {
   let pending = null, finalized = false, assisted = false;
   let offer = null, offerSequence = 0, runSequence = 0;
   let audioUnlocked = false;
-  let selectedLevel = 'L01', growthError = '';
+  let selectedLevel = 'L01', growthError = '', selectedDailyPool = 'A';
   // ── Constants (logical 270×480) ────────────────────────
   const W = 270;
   const H = 480;
@@ -922,6 +923,7 @@ function createGame(options) {
     wellSticky: 0,
     nextStop: null,
     blood: null,
+    meditation: null,
   };
 
   function sectorOf(progress) {
@@ -1012,6 +1014,8 @@ function createGame(options) {
       mass: diffConf().massStart,
       jetT: 0,
       jetCd: 0,
+      pulseCd: 0,
+      lastJetAt: -99,
       hitFlash: 0,
       invuln: 0,
       pickupT: 0,
@@ -1194,7 +1198,7 @@ function createGame(options) {
     G.state = s;
     resetInput();
     if (s === 'intro') G.cine = { t: 0, beat: 0, sceneT: 0, omenPlayed: false };
-    const mode = { cover: 'title', title: 'title', intro: 'intro', play: 'chase', discover: 'discover', qte: 'qte', result: 'ending' }[s];
+    const mode = { cover: 'title', title: 'title', intro: 'intro', play: 'chase', discover: 'discover', qte: 'qte', result: 'ending', meditation: 'title' }[s];
     if (mode) AudioEngine.startMusic(mode);
   }
 
@@ -1345,26 +1349,32 @@ function createGame(options) {
   // V2 uses authored depth events and transactional progression. Classic keeps
   // its original random spawning, capture, achievements and PB paths.
   function isV2() { return G.mode !== 'classic' && !!G.v2; }
-  function beginV2(mode, id) {
+  function beginV2(mode, id, pool) {
     if (Store._readFail) { setState('storageError'); return false; }
     const level = mode === 'campaign' ? Campaign.level(id) : null;
     if (mode === 'campaign' && (!level || !Campaign.unlocked(Store.data, id))) return false;
-    if (mode === 'daily' && !Progression.dailyUnlocked(Store.data)) return false;
-    const route = mode === 'daily' ? Daily.createRun(clock(), 'A') : null;
-    G.mode = mode; G.diff = 'easy'; G.dailyMode = false;
+    if ((mode === 'daily' || mode === 'endless') && !Progression.dailyUnlocked(Store.data)) return false;
+    if (mode === 'daily' && !Progression.dailyPoolUnlocked(Store.data, pool || 'A')) return false;
+    const route = mode === 'daily' ? Daily.createRun(clock(), pool || 'A') : null;
+    if (mode === 'daily' && !route) return false;
+    const endlessRun = mode === 'endless' ? Endless.createRun(clock(), runSequence) : null;
+    G.mode = mode; G.diff = mode === 'endless' || (level && level.chapter === 3) || (route && route.pool === 'C') ? 'blood' : 'easy'; G.dailyMode = false;
     resetRun();
     const snapshot = Progression.abilities(Store.data);
     G.v2 = {
-      levelId: level ? level.id : null, level, route,
+      levelId: level ? level.id : null, level, route, endless: endlessRun,
       runId: clock().toString(36) + '-' + runSequence + '-' + Math.random().toString(36).slice(2, 10),
       startAbilities: Object.assign({}, snapshot), abilities: Object.assign({}, snapshot), grants: [],
-      events: level ? Campaign.events(id) : route.events, cursor: 0,
-      signals: 0, dust: 0, rockGroups: 0, jets: 0, gates: 0, segments: 0,
+      events: level ? Campaign.events(id) : route ? route.events : [], cursor: 0, nextChunk: 0,
+      signals: 0, dust: 0, rockGroups: 0, jets: 0, pulses: 0, locks: 0, tides: 0, shocks: 0, sails: 0, gates: 0, segments: 0,
       segmentSignals: [0, 0, 0], gateIds: [], tailAt: level ? level.duration : 0,
-      tailIndex: 0, hint: '', hintUntil: 0, grantError: '', saveError: '', result: null
+      tailIndex: 0, hint: '', hintUntil: 0, pendingGrant: null, grantError: '', saveError: '', result: null
     };
     G.earth.mass = level ? level.massStart : 60;
-    G.blood = null; G.runDate = route ? route.date : Daily.dateKey(clock());
+    G.blood = level && ['L09', 'L11', 'L12'].indexOf(level.id) >= 0 ? {
+      spikeT: 6, spike: null, shockT: level.id === 'L09' ? Infinity : 10, shock: null
+    } : route && route.pool === 'C' ? { spikeT: 5, spike: null, shockT: 9, shock: null } : null;
+    G.runDate = route ? route.date : Daily.dateKey(clock());
     toast = ''; toastT = 0;
     setState('play');
     return true;
@@ -1372,7 +1382,10 @@ function createGame(options) {
   function v2Hint() {
     const v = G.v2;
     if (v.hint && G.runT < v.hintUntil) return v.hint;
+    if (G.mode === 'endless') return G.runT < 5 ? '保持追寻，星尘可以延续质量' : '危险逐渐增压，尽可能活得更久';
     if (G.mode === 'daily') return ['追光得分，安全通过航标', '完成航段，继续积累得分', '最后一段，稳住航线'][Math.min(2, Math.floor(G.runT / 50))];
+    if (v.levelId === 'L09') return '看清瞄准线，横移避开潮汐刺';
+    if (v.levelId === 'L10') return v.sails ? '借力已释放，继续追光' : '沿井外缘移动蓄力，再向外离开';
     if (v.levelId === 'L01') return G.runT < 4 ? '月亮走远了，光还在。' : '推动摇杆，追随金色辉光';
     if (v.levelId === 'L02') return '避开前方碎石';
     if (v.levelId === 'L03' && !v.dust) return '星尘可以补充质量';
@@ -1386,10 +1399,19 @@ function createGame(options) {
   }
   function v2Schedule() {
     const v = G.v2;
+    if (G.mode === 'endless') {
+      while (v.nextChunk * Endless.CHUNK_SECONDS <= G.runT + 6) {
+        const events = Endless.chunk(v.endless.seed, v.nextChunk++);
+        for (let i = 0; i < events.length; i++) v.events.push(events[i]);
+      }
+    }
     while (v.cursor < v.events.length && v.events[v.cursor].at <= G.runT + 1e-8) {
       const event = v.events[v.cursor++];
       if (event.type === 'grant') {
-        if (!v.abilities.jet) { toast = ''; toastT = 0; setState('grant'); return false; }
+        if (!v.abilities[event.ability]) {
+          v.pendingGrant = { ability: event.ability, levelId: event.levelId };
+          toast = ''; toastT = 0; setState('grant'); return false;
+        }
       } else if (event.type === 'group') v.rockGroups = Math.max(v.rockGroups, event.group);
       else spawnV2(event);
     }
@@ -1408,7 +1430,8 @@ function createGame(options) {
   function updateV2Bodies(dt) {
     const e = G.earth;
     for (const b of G.bodies) {
-      b.z -= 0.27 * dt;
+      const speed = G.mode === 'endless' ? .27 + Math.min(.15, G.runT / 300 * .15) : .27;
+      b.z -= speed * dt;
       b.ph = (b.ph || 0) + dt * 2;
       if ((b.type !== 'signal' && b.type !== 'dust') || b.z >= 0.35 || b.z <= 0.02) continue;
       const p = projectBody(b), dx = e.x - p.sx, dy = e.y - p.sy;
@@ -1423,9 +1446,11 @@ function createGame(options) {
   function v2Completed() {
     const v = G.v2;
     if (G.mode === 'daily') return G.runT >= 150 - 1e-8;
+    if (G.mode === 'endless') return false;
     const need = v.level.objective;
     return G.runT >= v.level.duration && v.signals >= v.level.target && G.progress >= 1 - 1e-8 &&
-      v.rockGroups >= (need.groups || 0) && v.dust >= (need.dust || 0) && v.jets >= (need.jets || 0);
+      v.rockGroups >= (need.groups || 0) && v.dust >= (need.dust || 0) && v.jets >= (need.jets || 0) && v.pulses >= (need.pulses || 0) &&
+      v.tides >= (need.tides || 0) && v.sails >= (need.sails || 0);
   }
   function finishV2(completed) {
     if (!isV2() || pending || G.v2.result) return;
@@ -1433,32 +1458,36 @@ function createGame(options) {
     G.runT = Math.round(G.runT * 1000000) / 1000000;
     G.outcome = completed ? 'complete' : 'fail'; G.clearT = completed ? G.runT : null;
     if (G.mode === 'daily') v.segments = Math.min(3, Math.floor((G.runT + 1e-8) / 50));
-    G.score = G.mode === 'daily' ? Daily.score(v.signals, v.segments, v.gates) : 0;
+    G.score = G.mode === 'daily' ? Daily.score(v.signals, v.segments, v.gates) : G.mode === 'endless' ? Math.floor(G.runT * 10) : 0;
     v.result = Object.assign({
       runId: v.runId, levelId: v.levelId, completed, time: G.runT,
-      signals: v.signals, segments: v.segments, gates: v.gates, score: G.score,
+      signals: v.signals, segments: v.segments, gates: v.gates, locks: v.locks, score: G.score,
       abilities: Object.assign({}, v.abilities), startAbilities: Object.assign({}, v.startAbilities), grants: v.grants.slice(), assisted: false
     }, v.route ? { date: v.route.date, pool: v.route.pool, version: v.route.version, seed: v.route.seed, templates: v.route.templates } : {});
+    if (G.mode === 'endless') Object.assign(v.result, { date: G.runDate, version: v.endless.version, seed: v.endless.seed });
     G.bodies = []; toast = ''; toastT = 0; resetInput();
     saveV2Result(); setState('result');
   }
   function saveV2Result() {
     if (!isV2() || !G.v2.result || finalized) return false;
     const v = G.v2;
-    const tx = G.mode === 'campaign' ? Progression.settleCampaign(Store.data, v.result) : Progression.settleDaily(Store.data, v.result);
+    const tx = G.mode === 'campaign' ? Progression.settleCampaign(Store.data, v.result) :
+      G.mode === 'endless' ? Progression.settleEndless(Store.data, v.result) : Progression.settleDaily(Store.data, v.result);
     if (!tx.ok || !Store.commit(tx.data)) {
-      v.saveError = '保存未完成，重试后领取成长'; return false;
+      v.saveError = '保存未完成，请重试'; return false;
     }
-    v.reward = Number(tx.reward) || 0; v.saveError = ''; finalized = true;
+    v.reward = Number(tx.reward) || 0; v.newBest = tx.newBest === true; v.saveError = ''; finalized = true;
     return true;
   }
   function claimV2Ability() {
     if (G.state !== 'grant' || !isV2()) return false;
-    const tx = Progression.grant(Store.data, 'jet', 'L04');
+    const grant = G.v2.pendingGrant || { ability: 'jet', levelId: 'L04' };
+    const tx = Progression.grant(Store.data, grant.ability, grant.levelId);
     if (!tx.ok || !Store.commit(tx.data)) { G.v2.grantError = '保存失败，请重试'; return false; }
     G.v2.abilities = Progression.abilities(Store.data);
-    G.v2.grants.push({ ability: 'jet', level: 1, levelId: 'L04', at: G.runT });
-    G.v2.grantError = ''; G.v2.hint = '喷射Ⅰ已获得，推动摇杆试试'; G.v2.hintUntil = G.runT + 4;
+    G.v2.grants.push({ ability: grant.ability, level: 1, levelId: grant.levelId, at: G.runT });
+    G.v2.pendingGrant = null;
+    G.v2.grantError = ''; G.v2.hint = grant.ability === 'pulse' ? '冷却中再按一次，发动额外脉冲' : grant.ability === 'sail' ? '引力帆Ⅰ已获得，沿井外缘蓄力' : '喷射Ⅰ已获得，推动摇杆试试'; G.v2.hintUntil = G.runT + 4;
     setState('play'); return true;
   }
 
@@ -1511,11 +1540,14 @@ function createGame(options) {
   }
 
   function enterCapture() {
+    const calibration = isV2() && G.v2.levelId === 'L08';
+    if (isV2()) G.blood = null;
     G.qte = {
       t: 0,
       tutorial: QTE.tutorialSec,
       locks: 0,
-      need: G.diff === "easy" ? QTE.needLocksEasy : QTE.needLocks,
+      need: calibration ? 2 : isV2() && G.v2.levelId === 'L12' ? 3 : G.diff === "easy" ? QTE.needLocksEasy : QTE.needLocks,
+      calibration,
       perfect: 0,
       good: 0,
       miss: 0,
@@ -1718,7 +1750,7 @@ function createGame(options) {
       } else {
         q.miss++;
         q.combo = 0;
-        q.feedback = "光圈没套住月亮";
+        q.feedback = q.calibration ? "光圈没套住目标" : "光圈没套住月亮";
         q.feedbackT = 0.6;
         AudioEngine.sfx("qte_miss");
         q.moonVx *= 1.2;
@@ -1787,6 +1819,13 @@ function createGame(options) {
     if (pending || finalized) return;
     const q = G.qte;
     const completed = !!(q && q.locks >= q.need);
+    if (isV2()) {
+      G.v2.locks = q ? q.locks : 0;
+      if (completed && G.v2.levelId === 'L12') {
+        G.reunionT = 0; G.bodies = []; G.blood = null; resetInput(); AudioEngine.sfx('win'); setState('reunion');
+      } else finishV2(completed);
+      return;
+    }
     if (completed) G.clearT = G.runT;
     const qs = qteScore();
     computeScore();
@@ -1976,7 +2015,7 @@ function createGame(options) {
     AudioEngine.sfx("hit");
     burst(e.x, e.y, "#FF2A6D", 16, 65);
     burst(e.x, e.y, "#D97B3A", 8, 40);
-    if (e.mass < PHYS.massMin + 2) lose(kind === "shock" ? "被月蚀冲击撕裂" : "被潮汐刺贯穿");
+    if (isV2() ? e.mass <= PHYS.massMin : e.mass < PHYS.massMin + 2) lose(kind === "shock" ? "被月蚀冲击撕裂" : "被潮汐刺贯穿");
   }
 
   function updateBlood(dt) {
@@ -1989,7 +2028,7 @@ function createGame(options) {
     const my = G.moon.y;
 
     // ── tidal spike: warn line through player, then fire ──
-    if (!b.spike) {
+    if (!b.spike && (!isV2() || !b.shock)) {
       b.spikeT -= dt;
       if (b.spikeT <= 0) {
         const ang = Math.atan2(e.y - my, e.x - mx);
@@ -2004,8 +2043,9 @@ function createGame(options) {
           live: BLOOD.spikeLive,
           hit: false,
         };
+        if (isV2() && G.v2) G.v2.tides++;
       }
-    } else {
+    } else if (b.spike) {
       const s = b.spike;
       s.t += dt;
       if (s.t < s.warn) {
@@ -2020,12 +2060,12 @@ function createGame(options) {
         }
       } else {
         b.spike = null;
-        b.spikeT = BLOOD.spikeCd[sec] * (0.85 + Math.random() * 0.35);
+        b.spikeT = BLOOD.spikeCd[sec] * (0.85 + Math.random() * 0.35) * (isV2() ? 1.25 : 1);
       }
     }
 
     // ── expanding shock ring from a frozen origin ──
-    if (!b.shock) {
+    if (!b.shock && (!isV2() || !b.spike)) {
       b.shockT -= dt;
       if (b.shockT <= 0) {
         b.shock = {
@@ -2036,8 +2076,9 @@ function createGame(options) {
           live: BLOOD.shockLive,
           hit: false,
         };
+        if (isV2() && G.v2) G.v2.shocks++;
       }
-    } else {
+    } else if (b.shock) {
       const k = b.shock;
       k.t += dt;
       if (k.t >= k.warn && k.t < k.warn + k.live) {
@@ -2052,7 +2093,7 @@ function createGame(options) {
         }
       } else if (k.t >= k.warn + k.live) {
         b.shock = null;
-        b.shockT = BLOOD.shockCd[sec] * (0.85 + Math.random() * 0.35);
+        b.shockT = BLOOD.shockCd[sec] * (0.85 + Math.random() * 0.35) * (isV2() ? 1.25 : 1);
       }
     }
   }
@@ -2135,6 +2176,30 @@ function createGame(options) {
     setState("intro");
   }
 
+  function updateSail(b, rr, d, dt, ax, ay) {
+    if (!isV2() || !G.v2.abilities.sail || b.sailUsed || b.z >= .68 || b.z < -.02) return;
+    const e = G.earth, params = Progression.sailParams(G.v2.abilities.sail);
+    if (b.sailCharge === undefined) { b.sailCharge = 0; b.sailReady = false; b.sailLastD = d; }
+    const directed = Math.hypot(ax, ay) >= .15;
+    if (d < rr * 2.2) { b.sailCharge = 0; b.sailReady = false; }
+    else if (d >= rr * 2.4 && d <= rr * 3.4) {
+      if (directed) b.sailCharge = Math.min(params.charge, b.sailCharge + dt);
+      if (b.sailCharge >= params.charge - 1e-8) b.sailReady = true;
+    } else if (!b.sailReady) b.sailCharge = 0;
+    if (b.sailReady && d > rr * 3.4 && d > b.sailLastD && directed) {
+      let jx = ax, jy = ay;
+      const n = Math.hypot(jx, jy) || 1; jx /= n; jy /= n;
+      if (e.jetT <= 0) {
+        const jet = Progression.jetParams(G.v2.abilities.jet) || { duration: .22, impulse: 55 };
+        e.jetT = jet.duration; e.vx += jx * jet.impulse; e.vy += jy * jet.impulse;
+      }
+      b.sailUsed = true; b.sailReady = false; G.v2.sails++;
+      AudioEngine.sfx('jet'); burst(e.x, e.y, '#E8C878', 12, 55);
+      G.v2.hint = '引力助推已释放'; G.v2.hintUntil = G.runT + 2;
+    }
+    b.sailLastD = d;
+  }
+
   function updatePlay(dt) {
     const e = G.earth;
     if (!e.alive) {
@@ -2161,17 +2226,24 @@ function createGame(options) {
       (e.jetT > 0 ? (isV2() ? V2_JET_PHYS.targetMultiplier : 1.25) : 1);
 
     e.jetCd = Math.max(0, e.jetCd - dt);
+    e.pulseCd = Math.max(0, (e.pulseCd || 0) - dt);
     e.jetT = Math.max(0, e.jetT - dt);
     if (Input.jetPressed) {
       Input.jetPressed = false;
       const jet = isV2() ? Progression.jetParams(G.v2.abilities.jet) : { duration: PHYS.jetDuration, cooldown: PHYS.jetCooldown, cost: PHYS.jetMassCost, impulse: 55 };
+      const pulse = isV2() ? Progression.pulseParams(G.v2.abilities.pulse) : null;
       const directed = Math.hypot(ax, ay) >= 0.15 || Math.hypot(e.vx, e.vy) >= 1;
+      const normalReady = e.jetCd <= 0;
+      const extraReady = !normalReady && !!pulse && e.pulseCd <= 0 && G.runT - e.lastJetAt >= pulse.minInterval;
       if (isV2() && jet && !directed) { G.v2.hint = '推动摇杆，再点喷射'; G.v2.hintUntil = G.runT + 2.5; }
-      if (jet && (!isV2() || directed) && e.jetCd <= 0 && e.mass > PHYS.massMin + 1) {
+      if (jet && (!isV2() || directed) && (normalReady || extraReady) && e.mass > PHYS.massMin + 1) {
         e.jetT = jet.duration;
         e.jetCd = jet.cooldown;
         e.mass = Math.max(PHYS.massMin, e.mass - jet.cost);
-        if (isV2()) G.v2.jets++;
+        if (isV2()) {
+          if (extraReady) { e.pulseCd = pulse.recovery; G.v2.pulses++; }
+          G.v2.jets++; e.lastJetAt = G.runT;
+        }
         AudioEngine.sfx("jet");
         burst(e.x, e.y + e.r, "#FFD166", 12, 55);
         // immediate kick in stick (or velocity) direction — snappier burst
@@ -2224,6 +2296,7 @@ function createGame(options) {
         lose("被黑暗天体吞没");
         return;
       }
+      updateSail(b, rr, d, dt, ax, ay);
       if (b.z < 0.68 && d < rr * 3.4) {
         const f = (b.pull / (d2 + 60)) * clamp(1 - d / (rr * 3.4), 0, 1) * p.scale;
         e.vx += ((p.sx - e.x) / d) * f * dt * 42;
@@ -2337,7 +2410,8 @@ function createGame(options) {
       } else if (b.type === "signal") {
         if (isV2()) {
           const v = G.v2, segment = Number.isInteger(b.segment) ? b.segment : 0;
-          if (G.mode === 'campaign' || v.segmentSignals[segment] < 20) {
+          if (G.mode === 'endless') v.signals++;
+          else if (G.mode === 'campaign' || v.segmentSignals[segment] < 20) {
             v.signals++; v.segmentSignals[segment]++;
             G.progress = clamp(G.progress + (G.mode === 'campaign' ? 1 / v.level.target : 1 / 20), 0, 1);
           }
@@ -2366,6 +2440,9 @@ function createGame(options) {
     G.bodies = G.bodies.filter((b) => !b.dead);
 
     if (!isV2()) G.progress = clamp(G.progress + PROG.idle * dt, 0, 1);
+    if (isV2() && G.mode === 'endless') {
+      e.mass = clamp(e.mass - (.16 + Math.min(.12, G.runT / 240 * .12)) * dt, PHYS.massMin, PHYS.massMax);
+    }
 
     // moon sits at vanishing-point depth — grows as you close in
     const mz = lerp(0.92, 0.12, easeOut(G.progress));
@@ -2386,11 +2463,17 @@ function createGame(options) {
     }
 
     if (isV2()) {
+      if (G.mode === 'campaign' && G.runT >= G.v2.level.duration) G.blood = null;
+      if (G.blood) { updateBlood(dt); if (pending) return; }
       if (G.mode === 'daily') {
         G.v2.segments = Math.min(3, Math.floor((G.runT + 1e-8) / 50));
         G.score = Daily.score(G.v2.signals, G.v2.segments, G.v2.gates);
       }
-      if (v2Completed()) { finishV2(true); return; }
+      if (v2Completed()) {
+        if (G.mode === 'campaign' && ['L08', 'L12'].indexOf(G.v2.levelId) >= 0) enterCapture();
+        else finishV2(true);
+        return;
+      }
       updateV2Bodies(dt); updateParticles(dt); return;
     }
 
@@ -2529,6 +2612,17 @@ function createGame(options) {
 
   function drawWell(b) {
     const { x, y, r, ph } = b;
+    if (isV2() && G.v2.abilities.sail) {
+      ctx.save(); ctx.strokeStyle = 'rgba(232,200,120,.28)'; ctx.lineWidth = .7;
+      ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.arc(x, y, r * 2.4, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, r * 3.4, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+      if (b.sailCharge > 0 && !b.sailUsed) {
+        const params = Progression.sailParams(G.v2.abilities.sail);
+        ctx.strokeStyle = '#E8C878'; ctx.lineWidth = 1.5; ctx.beginPath();
+        ctx.arc(x, y, r * 3.5, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, b.sailCharge / params.charge)); ctx.stroke();
+      }
+      ctx.restore();
+    }
     if (ART.well) {
       drawImg(ART.well, x, y, r * 3.4, r * 2.2, ph * 0.08);
       return;
@@ -2731,6 +2825,15 @@ function createGame(options) {
     ctx.textBaseline = "alphabetic";
   }
 
+  function drawCalibrationTarget() {
+    const x = G.moon.x, y = G.moon.y, r = G.moon.r || 22;
+    ctx.save(); ctx.strokeStyle = '#E8C878'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(x, y, r * .65, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(x - r - 8, y); ctx.lineTo(x + r + 8, y); ctx.moveTo(x, y - r - 8); ctx.lineTo(x, y + r + 8); ctx.stroke();
+    ctx.fillStyle = '#C5B89A'; ctx.font = '9px ' + monoFamily; ctx.textAlign = 'center'; ctx.fillText('轨迹校准', x, y + r + 20); ctx.restore();
+  }
+
   function drawQTE() {
     const q = G.qte;
     if (!q) return;
@@ -2837,7 +2940,7 @@ function createGame(options) {
       ctx.fillStyle = "#FFD166";
       ctx.font = "bold 13px " + monoFamily;
       ctx.textAlign = "center";
-      ctx.fillText("光圈套住月亮", W / 2, H * 0.12 + 24);
+      ctx.fillText(q.calibration ? "光圈套住校准靶" : "光圈套住月亮", W / 2, H * 0.12 + 24);
       ctx.fillStyle = "#F0E6D3";
       ctx.font = "12px " + monoFamily;
       const extra = G.diff === "blood" ? " · 首次会挣脱" : "";
@@ -3005,8 +3108,21 @@ function createGame(options) {
     }
   }
 
+  function drawReunion() {
+    const t = G.reunionT || 0, p = easeInOut(clamp(t / 2, 0, 1));
+    ctx.fillStyle = '#0C1D30'; ctx.fillRect(0, 0, W, H); drawStipple(.08); drawStars(0);
+    ctx.strokeStyle = 'rgba(212,168,75,.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(135, 232, 74, 46, -.2, 0, Math.PI * 2); ctx.stroke();
+    const ex = lerp(65, 119, p), ey = lerp(275, 238, p), mx = lerp(211, 151, p), my = lerp(190, 224, p);
+    drawEarth({ x: ex, y: ey, r: 20, angle: t * .3, jetT: 0, hitFlash: 0 });
+    drawMoon({ x: mx, y: my, r: 24 });
+    ctx.fillStyle = '#F0E6D3'; ctx.font = '700 25px ' + titleFamily; ctx.textAlign = 'center'; ctx.fillText('月之重逢', 135, 91);
+    ctx.fillStyle = '#E8C878'; ctx.font = '11px ' + monoFamily; ctx.fillText('循着辉光，回到彼此身边。', 135, 341);
+    ctx.strokeStyle = '#D4A84B'; ctx.beginPath(); ctx.moveTo(72, 367); ctx.lineTo(198, 367); ctx.stroke();
+  }
+
   function render(dt) {
-    if (!ctx || ['cover', 'title', 'classic', 'map', 'growth', 'dailyBrief', 'storageError'].indexOf(G.state) >= 0) return;
+    if (!ctx || ['cover', 'title', 'classic', 'map', 'growth', 'dailyBrief', 'meditation', 'storageError'].indexOf(G.state) >= 0) return;
+    if (G.state === 'reunion') { drawReunion(); return; }
     if (isV2() && (G.state === 'result' || G.state === 'card')) return;
     if (pauseReasons.size) dt = 0;
     let ox = 0;
@@ -3076,7 +3192,8 @@ function createGame(options) {
         ctx.stroke();
         ctx.setLineDash([]);
       }
-      drawMoon(G.moon);
+      if (G.state === 'qte' && G.qte && G.qte.calibration) drawCalibrationTarget();
+    else drawMoon(G.moon);
       drawBlood();
       if (G.earth) drawEarth(G.earth);
       drawParticles();
@@ -3186,7 +3303,19 @@ function createGame(options) {
       updateParticles(dt * 0.35);
       return;
     }
-    if (G.state === 'intro') updateIntro(dt);
+    if (G.state === 'reunion') {
+      G.reunionT += dt; updateParticles(dt);
+      if (G.reunionT >= 2.4) finishV2(true);
+    }
+    else if (G.state === 'intro') updateIntro(dt);
+    else if (G.state === 'meditation') {
+      const m = G.meditation;
+      if (m && m.running) {
+        m.elapsed = Math.min(m.duration, m.elapsed + dt);
+        if (m.elapsed >= m.duration) { m.running = false; m.completed = true; }
+      }
+      updateParticles(dt);
+    }
     else if (G.state === 'play' || G.state === 'discover' || G.state === 'qte') {
       G.runT += dt;
       if (isV2() && G.mode === 'daily' && G.runT >= 150 - 1e-8) {
@@ -3233,6 +3362,23 @@ function createGame(options) {
     }
     if (pauseReasons.size) return false;
     const screen = G.state;
+    if (name === 'openMeditation' && screen === 'title') {
+      G.meditation = { duration: 300, elapsed: 0, running: false, completed: false };
+      AudioEngine.unlockFromGesture(); AudioEngine.sfx('click'); setState('meditation'); return true;
+    }
+    if (screen === 'meditation') {
+      const m = G.meditation;
+      if (name === 'backToHub') { G.meditation = null; setState('title'); return true; }
+      if (name === 'setMeditationDuration' && m && !m.running) {
+        const duration = Number(payload);
+        if ([120, 300, 600].indexOf(duration) < 0) return false;
+        m.duration = duration; m.elapsed = 0; m.completed = false; return true;
+      }
+      if (name === 'startMeditation' && m && !m.running) {
+        m.elapsed = 0; m.running = true; m.completed = false;
+        AudioEngine.unlockFromGesture(); AudioEngine.startMusic('title'); return true;
+      }
+    }
     const isMenu = screen === 'title' || screen === 'classic';
     const outOfRun = ['title', 'classic', 'map', 'growth', 'dailyBrief', 'result'].indexOf(screen) >= 0;
     if (name === 'retryStorage' && (screen === 'storageError' || isMenu)) {
@@ -3242,11 +3388,11 @@ function createGame(options) {
     if (name === 'claimAbility') return claimV2Ability();
     if (name === 'retrySave' && screen === 'result') return saveV2Result();
     if (screen === 'result' && isV2() && !finalized) return false;
-    if (outOfRun && ['openCampaign', 'openGrowth', 'openDaily', 'openClassic', 'backToHub', 'continueCampaign', 'startCampaign', 'startDaily', 'selectLevel', 'upgradeAbility'].indexOf(name) >= 0) {
+    if (outOfRun && ['openCampaign', 'openGrowth', 'openDaily', 'openClassic', 'backToHub', 'continueCampaign', 'startCampaign', 'startDaily', 'startEndless', 'selectDailyPool', 'selectLevel', 'upgradeAbility'].indexOf(name) >= 0) {
       if (Store._readFail) { setState('storageError'); return false; }
       toast = ''; toastT = 0;
       AudioEngine.unlockFromGesture(); AudioEngine.sfx('click');
-      if (name === 'openCampaign') { const next = Campaign.nextLevel(Store.data); selectedLevel = next ? next.id : 'L04'; setState('map'); }
+      if (name === 'openCampaign') { const next = Campaign.nextLevel(Store.data); selectedLevel = next ? next.id : Campaign.LEVELS[Campaign.LEVELS.length - 1].id; setState('map'); }
       else if (name === 'selectLevel' && screen === 'map') {
         const id = typeof payload === 'object' && payload ? payload.id : payload;
         if (!Campaign.level(id)) return false; selectedLevel = id;
@@ -3257,21 +3403,31 @@ function createGame(options) {
       } else if (name === 'startCampaign') {
         const id = typeof payload === 'object' && payload ? payload.id : payload;
         return beginV2('campaign', id || selectedLevel);
-      } else if (name === 'startDaily') return beginV2('daily');
+      } else if (name === 'startDaily') return beginV2('daily', null, selectedDailyPool);
+      else if (name === 'selectDailyPool' && screen === 'dailyBrief') {
+        if (!Progression.dailyPoolUnlocked(Store.data, payload)) return false;
+        selectedDailyPool = payload; return true;
+      }
+      else if (name === 'startEndless') return beginV2('endless');
       else if (name === 'openGrowth') { growthError = ''; setState('growth'); }
-      else if (name === 'openDaily') setState('dailyBrief');
+      else if (name === 'openDaily') {
+        if (Progression.dailyPoolUnlocked(Store.data, 'C')) selectedDailyPool = 'C';
+        else if (Progression.dailyPoolUnlocked(Store.data, 'B')) selectedDailyPool = 'B';
+        setState('dailyBrief');
+      }
       else if (name === 'openClassic') { G.diff = clampDiff(Store.data.diff); setState('classic'); }
       else if (name === 'backToHub') { G.diff = clampDiff(Store.data.diff); setState('title'); }
       else if (name === 'upgradeAbility' && screen === 'growth') {
         const tx = Progression.upgrade(Store.data, payload && payload.ability, payload && payload.expectedLevel);
         if (!tx.ok) { growthError = ({ locked: '主线授予后可强化', 'max-level': '已完成强化', 'stale-level': '能力等级已更新', 'insufficient-points': '成长点不足' })[tx.reason] || '暂时无法强化'; return false; }
         if (!Store.commit(tx.data)) { growthError = '保存失败，成长点未扣除'; return false; }
-        growthError = ''; showToast('喷射强化已保存');
+        growthError = ''; showToast(({ jet: '喷射', pulse: '双脉冲', sail: '引力帆' }[payload && payload.ability] || '能力') + '强化已保存');
       } else return false;
       return true;
     }
     if (name === 'retry' && screen === 'result' && isV2()) {
-      if (G.mode === 'daily') return beginV2('daily');
+      if (G.mode === 'daily') return beginV2('daily', null, G.v2.route.pool);
+      if (G.mode === 'endless') return beginV2('endless');
       const next = G.v2.result.completed ? Campaign.nextLevel(Store.data) : G.v2.level;
       if (!next) { setState('dailyBrief'); return true; }
       return beginV2('campaign', next.id);
@@ -3355,21 +3511,31 @@ function createGame(options) {
     const v = G.v2, r = v.result, daily = G.mode === 'daily';
     const ratings = { none: '未达评级', bronze: '铜', silver: '银', gold: '金' };
     const next = Campaign.nextLevel(Store.data);
+    if (G.mode === 'endless') {
+      const best = Store.data.endlessV2.best;
+      return { kind: 'endless', completed: false, title: '追寻结束', subtitle: '无尽追寻 · 生存纪录',
+        rows: [{ label: '本次追寻', value: fmtTime(r.time) }, { label: '拾取月辉', value: String(r.signals) },
+          { label: '本机最佳', value: best ? fmtTime(best.time) : fmtTime(r.time) }],
+        reward: 0, points: Store.data.growthV2.points, savePending: !finalized, saveError: v.saveError,
+        nextLabel: '再次追寻', abilityText: abilityText(r.abilities), newBest: v.newBest === true,
+        bestText: best ? fmtTime(best.time) : fmtTime(r.time),
+        recordText: !finalized ? '保存成功后更新纪录' : v.newBest ? '新的本机最长追寻' : '本机最佳 ' + (best ? fmtTime(best.time) : fmtTime(r.time)) };
+    }
     const rows = daily ? [
       { label: '本次成绩', value: r.score + ' · ' + ratings[Daily.rating(r.score)] },
       { label: '存活航段', value: r.segments + '/3 · ' + fmtTime(r.time) },
       { label: '月辉 / 技巧门', value: r.signals + '/60 · ' + r.gates + '/3' },
-      { label: '归属航行日', value: r.date + ' · A' }
+      { label: '归属航行日', value: r.date + ' · ' + r.pool }
     ] : [
       { label: '月之辉光', value: r.signals + ' / ' + v.level.target },
       { label: '追近 / 质量', value: Math.round(G.progress * 100) + '% · ' + Math.round(G.earth.mass) },
       { label: '本次用时', value: fmtTime(r.time) },
-      { label: '教学进度', value: v.levelId === 'L02' ? '通过岩阵 ' + v.rockGroups + '/3' : v.levelId === 'L03' ? '星尘补给 ' + v.dust + ' 次' : v.levelId === 'L04' ? '定向喷射 ' + v.jets + ' 次' : '已辨认金色辉光' }
+      { label: '教学进度', value: v.levelId === 'L02' ? '通过岩阵 ' + v.rockGroups + '/3' : v.levelId === 'L03' ? '星尘补给 ' + v.dust + ' 次' : v.levelId === 'L04' ? '定向喷射 ' + v.jets + ' 次' : v.levelId === 'L05' ? '通过井场 ' + v.rockGroups + '/3' : v.levelId === 'L06' ? '额外脉冲 ' + v.pulses + ' 次' : v.levelId === 'L08' ? '校准锁定 ' + v.locks + '/2' : v.levelId === 'L09' ? '潮汐序列 ' + v.tides + '/3' : v.levelId === 'L10' ? '借力释放 ' + v.sails + ' 次' : v.levelId === 'L11' ? '潮汐段 ' + v.rockGroups + '/3' : v.levelId === 'L12' ? '有效锁定 ' + v.locks + '/3' : '已辨认金色辉光' }
     ];
     const best = !daily && Store.data.campaignV2.best[v.levelId];
     return { kind: G.mode, completed: r.completed,
-      title: r.completed ? (daily ? '航行完成' : '航迹已点亮') : '本次偏航',
-      subtitle: daily ? '每日 A · 近地航行' : v.levelId + ' · ' + v.level.name,
+      title: r.completed ? (daily ? '航行完成' : v.levelId === 'L12' ? '月之重逢' : '航迹已点亮') : '本次偏航',
+      subtitle: daily ? '每日 ' + r.pool + ' · ' + (r.pool === 'B' ? '深空航行' : r.pool === 'C' ? '暗潮航行' : '近地航行') : v.levelId + ' · ' + v.level.name,
       rows, reward: v.reward || 0, points: Store.data.growthV2.points,
       savePending: !finalized, saveError: v.saveError,
       nextLabel: daily ? '再次航行' : !r.completed ? '重试本关' : next ? '继续 ' + next.id : '前往每日航行',
@@ -3379,56 +3545,71 @@ function createGame(options) {
   }
   function v2View() {
     const data = Store.data, next = Campaign.nextLevel(data), a = data.growthV2.abilities;
-    const date = Daily.dateKey(clock()), day = Daily.rewardState(data, date);
-    const key = date + '|A|' + Daily.RULE_VERSION, record = data.dailyV2.records[key];
+    const date = Daily.dateKey(clock()), day = Daily.rewardState(data, date), pool = selectedDailyPool;
+    const key = date + '|' + pool + '|' + (pool === 'C' ? Daily.RULE_VERSION_C : pool === 'B' ? Daily.RULE_VERSION_B : Daily.RULE_VERSION), record = data.dailyV2.records[key];
     const best = record && record.best;
     const abilityRows = [
       { id: 'jet', name: '喷射', source: 'L04 第一脉冲授予', effect: a.jet ? '消耗 ' + Progression.jetParams(a.jet).cost + ' · 恢复 ' + Progression.jetParams(a.jet).cooldown + '秒' : '朝移动方向主动推进' },
-      { id: 'pulse', name: '双脉冲', source: 'L06 双重脉冲 · 后续航程', effect: '冷却期间可再发动一次' },
-      { id: 'sail', name: '引力帆', source: 'L10 借力航行 · 后续航程', effect: '掠过引力井外缘后助推' }
+      { id: 'pulse', name: '双脉冲', source: 'L06 双重脉冲授予', effect: '冷却期间可再发动一次' },
+      { id: 'sail', name: '引力帆', source: 'L10 借力航行授予', effect: '掠过引力井外缘后助推' }
     ].map(row => {
-      const level = a[row.id], cost = row.id === 'jet' && level > 0 && level < 3 ? Progression.upgradeCost(row.id, level) : null;
+      const level = a[row.id], cost = level > 0 && level < 3 ? Progression.upgradeCost(row.id, level) : null;
       const p = row.id === 'jet' && level > 0 && level < 3 ? Progression.jetParams(level + 1) : null;
+      const pulse = row.id === 'pulse' && level > 0 && level < 3 ? Progression.pulseParams(level + 1) : null;
+      const sail = row.id === 'sail' && level > 0 && level < 3 ? Progression.sailParams(level + 1) : null;
       return Object.assign(row, { level, cost, canUpgrade: cost != null && data.growthV2.points >= cost,
-        nextEffect: p ? '消耗 ' + p.cost + ' · 恢复 ' + p.cooldown + '秒' : level === 3 ? '已完成强化' : '主线授予后可强化' });
+        nextEffect: p ? '消耗 ' + p.cost + ' · 恢复 ' + p.cooldown + '秒' : pulse ? '额外脉冲恢复 ' + pulse.recovery + ' 秒' : sail ? '外缘蓄力 ' + sail.charge + ' 秒' : level === 3 ? '已完成强化' : '主线授予后可强化' });
     });
     const v = isV2() ? G.v2 : null;
     const jet = v ? Progression.jetParams(v.abilities.jet) : null;
+    const pulse = v ? Progression.pulseParams(v.abilities.pulse) : null;
     return {
       mode: G.mode, storageError: Store._readFail,
-      hub: { nextId: next ? next.id : null, nextName: next ? next.name : '', complete: !next, points: data.growthV2.points, dailyUnlocked: data.campaignV2.completed.indexOf('L04') >= 0 },
-      map: { selectedId: selectedLevel, chapter: 1, nextChapterText: 'L05 · 后续航程尚未开放', levels: Campaign.LEVELS.map(level => {
+      hub: { nextId: next ? next.id : null, nextName: next ? next.name : '', complete: !next, points: data.growthV2.points,
+        completedCount: data.campaignV2.completed.length, totalLevels: Campaign.LEVELS.length,
+        chapter: next ? next.chapter : 3, chapterName: next ? ({ 1: '循光启程', 2: '穿越引力', 3: '月之暗面' }[next.chapter]) : '月之重逢',
+        dailyPool: Progression.dailyPoolUnlocked(data, 'C') ? 'C' : Progression.dailyPoolUnlocked(data, 'B') ? 'B' : 'A',
+        dailyUnlocked: data.campaignV2.completed.indexOf('L04') >= 0, endlessUnlocked: data.campaignV2.completed.indexOf('L04') >= 0,
+        endlessBestText: data.endlessV2.best ? fmtTime(data.endlessV2.best.time) : '' },
+      map: { selectedId: selectedLevel, chapter: 3, nextChapterText: next ? '继续 ' + next.id + ' · ' + next.name : '主线航程已完成', levels: Campaign.LEVELS.map(level => {
         const best = data.campaignV2.best[level.id];
-        return { id: level.id, name: level.name, target: level.target, objective: level.objectiveText,
+        return { id: level.id, name: level.name, chapter: level.chapter, target: level.target, objective: level.objectiveText,
           unlocked: Campaign.unlocked(data, level.id), completed: data.campaignV2.completed.indexOf(level.id) >= 0,
           selected: level.id === selectedLevel, bestText: best ? '最佳 ' + fmtTime(best.time) + ' · ' + abilityText(best.abilities) : '' };
       }) },
       growth: { points: data.growthV2.points, abilities: abilityRows, error: growthError },
-      daily: { date, pool: 'A', name: '近地航行', unlocked: data.campaignV2.completed.indexOf('L04') >= 0, remainingRewards: day.remaining,
+      daily: { date, pool, name: pool === 'C' ? '暗潮航行' : pool === 'B' ? '深空航行' : '近地航行', unlocked: Progression.dailyPoolUnlocked(data, pool), remainingRewards: day.remaining,
+        pools: [{ id: 'A', name: '近地', unlocked: Progression.dailyPoolUnlocked(data, 'A') },
+          { id: 'B', name: '深空', unlocked: Progression.dailyPoolUnlocked(data, 'B') },
+          { id: 'C', name: '暗潮', unlocked: Progression.dailyPoolUnlocked(data, 'C') }],
         bestText: best ? String(best.score) + ' 分' : '尚无本机纪录', bestScore: best ? best.score : null, bestAbilitiesText: best ? abilityText(best.abilities) : abilityText(a),
-        rating: best ? Daily.rating(best.score) : 'none', version: Daily.RULE_VERSION,
-        historyText: Object.keys(data.dailyV2.records).some(k => k.startsWith(date + '|A|') && k !== key) ? '另有旧规则纪录，分开保存' : '' },
-      run: v ? { title: G.mode === 'daily' ? '每日 A · 近地航行' : v.levelId + ' · ' + v.level.name,
-        objective: G.mode === 'daily' ? '存活 150 秒，追光得分' : v.level.objectiveText,
+        rating: best ? Daily.rating(best.score) : 'none', version: pool === 'C' ? Daily.RULE_VERSION_C : pool === 'B' ? Daily.RULE_VERSION_B : Daily.RULE_VERSION,
+        historyText: Object.keys(data.dailyV2.records).some(k => k.startsWith(date + '|' + pool + '|') && k !== key) ? '另有旧规则纪录，分开保存' : '' },
+      run: v ? { title: G.mode === 'endless' ? '无尽追寻' : G.mode === 'daily' ? '每日 ' + v.route.pool + ' · ' + (v.route.pool === 'C' ? '暗潮航行' : v.route.pool === 'B' ? '深空航行' : '近地航行') : v.levelId + ' · ' + v.level.name,
+        objective: G.mode === 'endless' ? '尽可能延长生存时间' : G.mode === 'daily' ? '存活 150 秒，追光得分' : v.level.objectiveText,
         hint: v2Hint(), signals: v.signals, target: v.level ? v.level.target : 60, dust: v.dust,
-        rockGroups: v.rockGroups, jets: v.jets, mass: G.earth.mass, remaining: Math.max(0, 150 - G.runT), score: G.score,
+        rockGroups: v.rockGroups, jets: v.jets, pulses: v.pulses, mass: G.earth.mass, elapsed: G.runT, remaining: Math.max(0, 150 - G.runT), score: G.score,
         segment: Math.min(3, Math.floor(G.runT / 50) + 1), jetLevel: v.abilities.jet,
         jetCooldown: G.earth.jetCd, jetCooldownMax: jet ? jet.cooldown : 0,
-        showMass: v.levelId !== 'L01' || v.abilities.jet > 0, grantPending: G.state === 'grant', grantError: v.grantError } : null,
+        pulseCooldown: G.earth.pulseCd || 0, pulseCooldownMax: pulse ? pulse.recovery : 0,
+        showMass: v.levelId !== 'L01' || v.abilities.jet > 0, grantPending: G.state === 'grant', grantError: v.grantError,
+        grantAbility: v.pendingGrant ? v.pendingGrant.ability : 'jet', grantLevelId: v.pendingGrant ? v.pendingGrant.levelId : 'L04' } : null,
       result: v2ResultView()
     };
   }
   function drawV2Share(g, w, h) {
     const r = v2ResultView(); if (!r) return;
     const daily = r.kind === 'daily';
+    const endless = r.kind === 'endless';
     const dateRow = r.rows.find(row => row.label === '归属航行日');
-    const timeRow = r.rows.find(row => row.label === (daily ? '存活航段' : '本次用时'));
+    const timeRow = r.rows.find(row => row.label === (daily ? '存活航段' : endless ? '本次追寻' : '本次用时'));
     const date = dateRow ? String(dateRow.value).split(' · ')[0] : '';
     const time = timeRow ? String(timeRow.value).split(' · ').pop() : '';
     const score = daily ? String((r.rows[0] || {}).value || '').split(' · ')[0] : time;
     const rating = daily ? Daily.rating(Number(score)) : 'none';
     const ratingText = { none: '未达评级', bronze: '铜级航线', silver: '银级航线', gold: '金色航线' }[rating];
-    const mission = daily ? 'A' : String(r.subtitle).split(' · ')[0];
+    const mission = daily ? (dateRow ? String(dateRow.value).split(' · ')[1] || 'A' : 'A') : endless ? '∞' : String(r.subtitle).split(' · ')[0];
+    const moonArt = (endless || (daily && mission === 'C') || /^L(09|10|11|12)$/.test(mission)) && ART.moonDark ? ART.moonDark : ART.moon;
     g.save(); g.scale(w / 540, h / 860);
     g.fillStyle = '#E8DCC8'; g.fillRect(0, 0, 540, 860);
     g.fillStyle = '#0C1D30'; g.fillRect(18, 18, 504, 824);
@@ -3457,7 +3638,7 @@ function createGame(options) {
     g.beginPath(); g.moveTo(48, 88); g.lineTo(492, 88); stroke('#D4A84B', 1);
     write(daily ? '每日航线' : r.title, 49, 137, 37, '#D4A84B', 'left', 430, '700', titleFamily);
     write(daily ? '每日航线' : r.title, 47, 135, 37, '#F0E6D3', 'left', 430, '700', titleFamily);
-    write(daily ? 'DAILY ROUTE / NEAR EARTH' : 'MISSION LOG / ' + mission, 50, 169, 16, '#E8C878', 'left', 430, '400', displayFamily);
+    write(daily ? 'DAILY ROUTE / NEAR EARTH' : endless ? 'ENDLESS PURSUIT / SURVIVAL' : 'MISSION LOG / ' + mission, 50, 169, 16, '#E8C878', 'left', 430, '400', displayFamily);
     g.beginPath(); g.ellipse(270, 329, 205, 119, -.18, 0, Math.PI * 2); stroke('rgba(212,168,75,.55)', 1.5);
     g.beginPath(); g.ellipse(270, 329, 165, 143, .47, 0, Math.PI * 2); stroke('rgba(212,168,75,.24)', 1);
     g.beginPath(); g.moveTo(118, 404); g.quadraticCurveTo(163, 198, 421, 241); stroke('#D4A84B', 4);
@@ -3469,12 +3650,12 @@ function createGame(options) {
     routeCircle(118, 404, 84, '#D4A84B', 1.4); routeCircle(421, 241, 71, '#D4A84B', 1.3);
     if (ART.earth) g.drawImage(ART.earth, 55, 341, 126, 126);
     else { g.beginPath(); g.arc(118, 404, 63, 0, Math.PI * 2); g.fillStyle = '#3D8B7A'; g.fill(); }
-    if (ART.moon) g.drawImage(ART.moon, 361, 181, 120, 120);
+    if (moonArt) g.drawImage(moonArt, 361, 181, 120, 120);
     else { g.beginPath(); g.arc(421, 241, 60, 0, Math.PI * 2); g.fillStyle = '#D4A84B'; g.fill(); }
     write('SOL III / EARTH', 52, 492, 12, '#C5B89A');
     write('TARGET / LUNA', 492, 321, 12, '#C5B89A', 'right', 160);
     g.fillStyle = '#D97B3A'; g.fillRect(48, 521, 62, 5);
-    write(daily ? 'SCORE / 今日得分' : 'MISSION TIME / 通关用时', 48, 548, 13, '#D4A84B');
+    write(daily ? 'SCORE / 今日得分' : endless ? 'SURVIVAL TIME / 生存时间' : 'MISSION TIME / 通关用时', 48, 548, 13, '#D4A84B');
     write(score, 45, 643, daily ? 94 : 78, '#E8C878', 'left', 340, '700', monoFamily);
     write(daily ? ratingText : r.subtitle, 50, 680, 18, '#F0E6D3', 'left', 330, '400', titleFamily);
     routeCircle(420, 602, 58, '#D4A84B', 1.5); routeCircle(420, 602, 49, 'rgba(232,200,120,.55)', 1);
@@ -3487,7 +3668,7 @@ function createGame(options) {
       420, 610, daily ? 40 : 25, '#E8C878', 'center', 82, '700', titleFamily);
     write(daily ? 'RATING' : 'MISSION', 420, 638, 10, '#C5B89A', 'center', 80);
     g.fillStyle = '#D97B3A'; g.fillRect(48, 718, 444, 8);
-    write(daily ? time + ' / ' + (r.completed ? 'FULL ROUTE' : 'PARTIAL ROUTE') :
+    write(daily ? time + ' / ' + (r.completed ? 'FULL ROUTE' : 'PARTIAL ROUTE') : endless ? '本机最长追寻已记录' :
       (r.abilityText.indexOf('本局新获得') >= 0 ? r.abilityText : r.completed ? '航程已完成' : '航程未完成'),
       48, 756, 14, '#E8C878', 'left', 440);
     write('本机航行纪录', 48, 800, 12, '#C5B89A', 'left', 200);
@@ -3502,6 +3683,12 @@ function createGame(options) {
       screen: G.state, paused: pauseReasons.size > 0, manualPaused: pauseReasons.has('manual'), sound: AudioEngine.enabled,
       v2: v2View(),
       toast, titleOrbit: G.titleOrbit,
+      meditation: G.state === 'meditation' && G.meditation ? {
+        duration: G.meditation.duration, elapsed: G.meditation.elapsed,
+        remaining: Math.max(0, Math.ceil(G.meditation.duration - G.meditation.elapsed)),
+        running: G.meditation.running, completed: G.meditation.completed, visualTime: G.t,
+        phase: G.meditation.running ? (G.meditation.elapsed % 8 < 4 ? 'inhale' : 'exhale') : 'still'
+      } : null,
       menu: {
         difficulty: G.diff, difficultyLabel: DIFF[G.diff].label, daily: menuDaily,
         difficulties: LADDER.map((key, i) => ({ key, label: DIFF[key].label, unlocked: i <= LADDER.indexOf(maxUnlockedDiff()), selected: key === G.diff })),
