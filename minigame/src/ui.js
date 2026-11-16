@@ -783,7 +783,7 @@ function createUI(options) {
     rect(0, 0, W, H, 'rgba(10,20,32,.9)');
     panelHeading('追逐尚未结束', '月亮还在前方');
     text('观看视频，继续追逐', 135, 172, 15, COLOR.bright, 'center', 'title', '700');
-    lines('恢复质量 · 保留追近进度\n每局仅一次 · 续玩成绩不计榜', 135, 208, 226, 10, COLOR.cream, 19, 'center', 'body');
+    lines(view.v2 && view.v2.mode === 'campaign' ? '恢复本关质量 · 保留航程与教学进度\n每局仅一次 · 不更新本关最佳用时' : '恢复质量 · 保留追近进度\n每局仅一次 · 续玩成绩不计榜', 135, 208, 226, 10, COLOR.cream, 19, 'center', 'body');
     button(overlay.adBusy ? '视频准备中…' : '观看视频，继续追逐', 'watchAd', 22, 288, 226, 36,
       { primary: true, disabled: !!overlay.adBusy, payload: view.revive.offerId, size: 11 });
     lines(overlay.adMessage || '完整观看后获得一次续玩', 135, 342, 226, 8.5, COLOR.dim, 13, 'center', 'body', 3);

@@ -380,3 +380,54 @@ test('a genuinely saved daily result publishes once and preview scopes are visib
   assert.equal(preview.getSocialState().ranking.preview, true);
   preview.destroy();
 });
+
+
+test('V2 cancel can retry the same offer, completion works once, and a second failure settles without another offer', async () => {
+  const fake = fakeWx();
+  fake.wx.getStorageSync = () => JSON.stringify({ campaignV2: { completed: ['L01', 'L02', 'L03', 'L04'] },
+    growthV2: { points: 0, abilities: { jet: 1 }, grants: { 'L04:jet': true } } });
+  const app = await start(fake.wx, { debug: true, rewardedAdUnitId: 'adunit-test' });
+  app.handleAction('openMenu'); app.handleAction('startCampaign', 'L05');
+  app.game.debug.fail('V2 广告取消'); app.game.update(.8);
+  const firstOffer = app.game.getReviveOffer().offerId;
+  const cancelled = app.handleAction('watchAd', firstOffer); await flush();
+  fake.ads[0].close({ isEnded: false }); const cancelResult = await cancelled;
+  assert.equal(cancelResult.status, 'cancelled');
+  assert.equal(app.game.getView().screen, 'revive');
+  assert.equal(app.game.getView().paused, false);
+  assert.equal(app.game.getView().revive.used, false);
+  app.handleAction('declineRevive', firstOffer);
+  assert.equal(app.game.getView().screen, 'result');
+  app.handleAction('retry');
+  app.game.debug.fail('V2 广告完成'); app.game.update(.8);
+  const secondOffer = app.game.getReviveOffer().offerId;
+  assert.notEqual(secondOffer, firstOffer);
+  const completed = app.handleAction('watchAd', secondOffer); await flush();
+  fake.ads[1].close({ isEnded: true }); fake.ads[1].close({ isEnded: true }); await completed;
+  assert.equal(app.game.getView().screen, 'play');
+  assert.equal(app.game.getView().revive.used, true);
+  app.game.debug.fail('第二次失败'); app.game.update(.8);
+  assert.equal(app.game.getView().screen, 'result');
+  assert.equal(app.game.getView().revive.eligible, false);
+  assert.equal(app.game.getView().v2.result.assisted, true);
+  assert.equal(app.game.getView().v2.growth.points, 0);
+  assert.equal(fake.written.length, 2);
+  app.destroy();
+});
+
+test('V2 no-fill never grants a revive or a first-clear reward and leaves normal exit usable', async () => {
+  const fake = fakeWx({ adFailure: true });
+  fake.wx.getStorageSync = () => JSON.stringify({ campaignV2: { completed: ['L01', 'L02', 'L03', 'L04'] },
+    growthV2: { points: 0, abilities: { jet: 1 }, grants: { 'L04:jet': true } } });
+  const app = await start(fake.wx, { debug: true, rewardedAdUnitId: 'adunit-test' });
+  app.handleAction('openMenu'); app.handleAction('startCampaign', 'L05'); app.game.debug.fail(); app.game.update(.8);
+  const request = app.handleAction('watchAd', app.game.getReviveOffer().offerId); await flush(); await request;
+  assert.equal(app.game.getView().screen, 'revive');
+  assert.equal(app.game.getView().revive.used, false);
+  assert.match(app.getAdState().message, /暂无可用视频/);
+  assert.equal(app.handleAction('home'), true);
+  assert.equal(app.game.getView().screen, 'title');
+  assert.equal(app.game.getView().v2.growth.points, 0);
+  assert.equal(fake.written.length, 1);
+  app.destroy();
+});

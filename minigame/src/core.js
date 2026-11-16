@@ -1463,7 +1463,7 @@ function createGame(options) {
     v.result = Object.assign({
       runId: v.runId, levelId: v.levelId, completed, time: G.runT,
       signals: v.signals, segments: v.segments, gates: v.gates, locks: v.locks, score: G.score,
-      abilities: Object.assign({}, v.abilities), startAbilities: Object.assign({}, v.startAbilities), grants: v.grants.slice(), assisted: false
+      abilities: Object.assign({}, v.abilities), startAbilities: Object.assign({}, v.startAbilities), grants: v.grants.slice(), assisted
     }, v.route ? { date: v.route.date, pool: v.route.pool, version: v.route.version, seed: v.route.seed, templates: v.route.templates } : {});
     if (G.mode === 'endless') Object.assign(v.result, { date: G.runDate, version: v.endless.version, seed: v.endless.seed });
     G.bodies = []; toast = ''; toastT = 0; resetInput();
@@ -3284,6 +3284,24 @@ function createGame(options) {
     setState("play");
   }
 
+  function canOfferRevive() {
+    if (!options.reviveEnabled || assisted) return false;
+    if (isV2()) return G.mode === 'campaign' && !!G.v2.level && Number(G.v2.levelId.slice(1)) >= 5;
+    return !G.dailyMode;
+  }
+  function safeV2RevivePoint() {
+    const points = [{ x: VIEW.px, y: VIEW.py }, { x: 54, y: 300 }, { x: 216, y: 300 },
+      { x: 135, y: 215 }, { x: 54, y: 160 }, { x: 216, y: 160 }];
+    for (const point of points) {
+      const safe = G.bodies.every(body => {
+        if (body.type !== 'well' || body.z >= .68 || body.z <= 0) return true;
+        const p = projectBody(body), radius = Math.max(10, body.r * p.scale) * 3.4 + G.earth.r;
+        return Math.hypot(point.x - p.sx, point.y - p.sy) > radius;
+      });
+      if (safe) return point;
+    }
+    return { x: VIEW.px, y: VIEW.py };
+  }
   function getReviveOffer() {
     return {
       offerId: offer ? offer.id : null,
@@ -3296,18 +3314,22 @@ function createGame(options) {
     if (!offer || offer.consumed || offer.id !== offerId || G.state !== 'revive' || assisted) return false;
     offer.consumed = true;
     assisted = true; pending = null;
-    G.earth.mass = diffConf().massStart;
+    G.earth.mass = isV2() && G.v2.level ? G.v2.level.massStart : diffConf().massStart;
     G.earth.alive = true; G.earth.invuln = 1.5;
     G.earth.vx = G.earth.vy = 0;
     G.earth.jetT = G.earth.jetCd = G.earth.hitFlash = 0;
-    G.earth.x = clamp(G.earth.x, G.earth.r + 4, W - G.earth.r - 4);
-    G.earth.y = clamp(G.earth.y, 56, H - 57);
+    if (isV2()) {
+      const point = safeV2RevivePoint(); G.earth.x = point.x; G.earth.y = point.y;
+    } else {
+      G.earth.x = clamp(G.earth.x, G.earth.r + 4, W - G.earth.r - 4);
+      G.earth.y = clamp(G.earth.y, 56, H - 57);
+    }
     G.bodies = []; G.spawnAcc = 0; G.wellSticky = 0;
     if (G.blood) { G.blood.spike = G.blood.shock = null; G.blood.spikeT = 2.2; G.blood.shockT = 3.6; }
     G.outcome = G.failReason = G.parts = null;
     G.score = 0; G.hitStop = G.shake = G.flash = 0;
     setState('play');
-    showToast('已续玩 · 不计本机榜与纪录');
+    showToast(isV2() ? '已续玩 · 保留航程，不更新最佳用时' : '已续玩 · 不计本机榜与纪录');
     return true;
   }
   function declineRevive(offerId) {
@@ -3349,7 +3371,7 @@ function createGame(options) {
       if (pending.remaining <= 1e-9) {
         const kind = pending.kind;
         pending = null;
-        if (kind === 'failure' && !isV2() && options.reviveEnabled && !G.dailyMode && !assisted) {
+        if (kind === 'failure' && canOfferRevive()) {
           offer = { id: `run${runSequence}-offer${++offerSequence}`, consumed: false };
           setState('revive');
         } else finalizeResult();
@@ -3592,14 +3614,15 @@ function createGame(options) {
       { label: '教学进度', value: v.levelId === 'L02' ? '通过岩阵 ' + v.rockGroups + '/3' : v.levelId === 'L03' ? '星尘补给 ' + v.dust + ' 次' : v.levelId === 'L04' ? '定向喷射 ' + v.jets + ' 次' : v.levelId === 'L05' ? '通过井场 ' + v.rockGroups + '/3' : v.levelId === 'L06' ? '额外脉冲 ' + v.pulses + ' 次' : v.levelId === 'L08' ? '校准锁定 ' + v.locks + '/2' : v.levelId === 'L09' ? '潮汐序列 ' + v.tides + '/3' : v.levelId === 'L10' ? '借力释放 ' + v.sails + ' 次' : v.levelId === 'L11' ? '潮汐段 ' + v.rockGroups + '/3' : v.levelId === 'L12' ? '有效锁定 ' + v.locks + '/3' : '已辨认金色辉光' }
     ];
     const best = !daily && Store.data.campaignV2.best[v.levelId];
-    return { kind: G.mode, completed: r.completed,
+    if (r.assisted) rows.push({ label: '续玩', value: '已续玩 · 不更新最佳', tone: '' });
+    return { kind: G.mode, completed: r.completed, assisted: r.assisted === true,
       title: r.completed ? (daily ? '航行完成' : v.levelId === 'L12' ? '月之重逢' : '航迹已点亮') : '本次偏航',
       subtitle: daily ? '每日 ' + r.pool + ' · ' + (r.pool === 'B' ? '深空航行' : r.pool === 'C' ? '暗潮航行' : '近地航行') : v.levelId + ' · ' + v.level.name,
       rows, reward: v.reward || 0, points: Store.data.growthV2.points,
       savePending: !finalized, saveError: v.saveError,
       nextLabel: daily ? '再次航行' : !r.completed ? '重试本关' : next ? '继续 ' + next.id : '前往每日航行',
       abilityText: abilityText(r.abilities) + (r.grants.length ? ' · 本局新获得' : ''),
-      recordText: !finalized ? '保存成功后发放奖励' : daily ? '本机纪录 · 同日同池同版本' : best ? '本关最佳 ' + fmtTime(best.time) + ' · ' + abilityText(best.abilities) : (G.failReason || '')
+      recordText: !finalized ? '保存成功后发放奖励' : daily ? '本机纪录 · 同日同池同版本' : r.assisted ? '已续玩 · 不更新最佳' + (best ? ' · 原纪录 ' + fmtTime(best.time) : '') : best ? '本关最佳 ' + fmtTime(best.time) + ' · ' + abilityText(best.abilities) : (G.failReason || '')
     };
   }
   function v2View() {
@@ -3774,7 +3797,7 @@ function createGame(options) {
     write(daily ? time + ' / ' + (r.completed ? 'FULL ROUTE' : 'PARTIAL ROUTE') : endless ? '本机最长追寻已记录' :
       (r.abilityText.indexOf('本局新获得') >= 0 ? r.abilityText : r.completed ? '航程已完成' : '航程未完成'),
       48, 756, 14, '#E8C878', 'left', 440);
-    write('本机航行纪录', 48, 800, 12, '#C5B89A', 'left', 200);
+    write(r.assisted ? '已续玩 · 不更新最佳用时' : '本机航行纪录', 48, 800, 12, '#C5B89A', 'left', 260);
     write('SOL III  /  AD LUNAM', 492, 800, 12, '#C5B89A', 'right', 230);
     g.restore();
   }
