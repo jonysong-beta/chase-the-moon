@@ -329,3 +329,54 @@ test('launch and foreground share parameters reach the validated destination onl
   assert.equal(app.game.getView().screen, 'meditation');
   app.destroy();
 });
+
+
+test('production hides rankings without a real configured service, even if preview was requested', async () => {
+  const fake = fakeWx();
+  fake.wx.getStorageSync = () => JSON.stringify({ campaignV2: { completed: ['L01', 'L02', 'L03', 'L04'] },
+    growthV2: { abilities: { jet: 1 }, grants: { 'L04:jet': true } } });
+  const app = await start(fake.wx, { previewRanking: true });
+  app.handleAction('openMenu'); app.handleAction('openDaily'); fake.frame(1);
+  assert.equal(app.getSocialState().ranking.available, false);
+  assert.equal(await app.handleAction('openLeaderboard'), false);
+  assert.equal(app.ui.hitTest(210, 395), null);
+  app.destroy();
+});
+
+test('world ranking opens from the real daily brief and returns without altering the route', async () => {
+  const fake = fakeWx(), requests = [];
+  fake.wx.getStorageSync = () => JSON.stringify({ campaignV2: { completed: ['L01', 'L02', 'L03', 'L04'] },
+    growthV2: { abilities: { jet: 1 }, grants: { 'L04:jet': true } } });
+  fake.wx.request = settings => { requests.push(settings); settings.success({ statusCode: 200,
+    data: { entries: [{ rank: 1, name: '远航者', value: 900 }], selfRank: 8 } }); };
+  const app = await start(fake.wx, { worldRankingUrl: 'https://rank.example.test/v1/leaderboard' });
+  app.handleAction('openMenu'); app.handleAction('openDaily');
+  const state = await app.handleAction('openLeaderboard');
+  assert.equal(state.status, 'ready');
+  assert.equal(state.rows[0].name, '远航者');
+  fake.frame(1);
+  assert.ok(fake.canvases[0].operations.some(operation => operation.name === 'fillText' && operation.args[0] === '航道记录'));
+  assert.equal(requests.filter(call => call.method === 'GET').length, 1);
+  assert.equal(requests.filter(call => call.method === 'POST').length, 0);
+  app.handleAction('closeLeaderboard'); fake.frame(2);
+  assert.equal(app.game.getView().screen, 'dailyBrief');
+  assert.equal(app.game.getView().v2.daily.pool, 'A');
+  app.destroy();
+});
+
+test('a genuinely saved daily result publishes once and preview scopes are visibly demonstrations', async () => {
+  const fake = fakeWx(), requests = [];
+  fake.wx.getStorageSync = () => JSON.stringify({ campaignV2: { completed: ['L01', 'L02', 'L03', 'L04'] },
+    growthV2: { abilities: { jet: 1 }, grants: { 'L04:jet': true } } });
+  fake.wx.request = settings => { requests.push(settings); settings.success({ statusCode: 200, data: { accepted: true, entries: [] } }); };
+  const app = await start(fake.wx, { debug: true, worldRankingUrl: 'https://rank.example.test/v1/leaderboard' });
+  app.handleAction('openMenu'); app.handleAction('startDaily');
+  app.game.debug.patch({ runT: 150 }); app.game.update(0.01); fake.frame(1); await flush();
+  assert.equal(requests.filter(call => call.method === 'POST').length, 1);
+  assert.equal(requests[0].data.score, 300);
+  assert.equal(requests[0].data.version, 'v2-a1');
+  app.destroy();
+  const preview = await start(fakeWx().wx, { debug: true, previewRanking: true });
+  assert.equal(preview.getSocialState().ranking.preview, true);
+  preview.destroy();
+});

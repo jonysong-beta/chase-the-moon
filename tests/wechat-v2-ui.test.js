@@ -258,10 +258,51 @@ test('main new-screen touch areas retain 44 CSS pixels at phone and tablet scale
     assert.equal(ui.hitTest(135, 329).action, 'openMeditation');
     assert.equal(ui.hitTest(54, 455), null);
     ui.drawOverlay(view('dailyBrief', { daily: { unlocked: true, remainingRewards: 5 } }));
-    for (const center of [{ x: 135, y: 440, action: 'startDaily' }, { x: 60, y: 19, action: 'backToHub' }]) {
+    for (const center of [{ x: 135, y: 450, action: 'startDaily' }, { x: 60, y: 19, action: 'backToHub' }]) {
       for (const offset of [{ x: -half, y: 0 }, { x: half, y: 0 }, { x: 0, y: -half }, { x: 0, y: half }]) {
         assert.equal(ui.hitTest(center.x + offset.x, center.y + offset.y).action, center.action);
       }
     }
+    ui.drawOverlay(view('dailyBrief', { daily: { unlocked: true, remainingRewards: 5 } }), { shareAvailable: true, rankingAvailable: true });
+    for (const center of [{ x: 90, y: 410, action: 'shareCurrent' }, { x: 210, y: 410, action: 'openLeaderboard' }, { x: 135, y: 450, action: 'startDaily' }]) {
+      for (const offset of [{ x: 0, y: -half }, { x: 0, y: half }]) {
+        assert.equal(ui.hitTest(center.x + offset.x, center.y + offset.y).action, center.action);
+      }
+    }
   }
+});
+
+
+test('leaderboard presents one metric, explicit sources, working scope switches and retry', () => {
+  const { ui, values } = setup();
+  const state = view('leaderboard', { mode: 'daily' });
+  state.leaderboard = { context: { mode: 'daily', date: '2026-11-17', pool: 'A', version: 'v2-a1' },
+    scope: 'world', worldEnabled: true, friendEnabled: true, preview: false, status: 'ready',
+    rows: [{ rank: 1, name: '远航者', value: 900 }, { rank: 2, name: '地面站', value: 750 }], selfRank: 12,
+    message: '世界排名 · 由服务端提供' };
+  ui.drawBackground(state); ui.drawOverlay(state);
+  assert.ok(values().includes('航道记录'));
+  assert.ok(values().includes('远航者'));
+  assert.ok(values().includes('900'));
+  assert.ok(values().some(text => /#12/.test(text)));
+  assert.equal(ui.hitTest(65, 98).action, 'selectLeaderboardScope');
+  assert.equal(ui.hitTest(200, 98).payload, 'friends');
+  assert.equal(ui.hitTest(135, 456).action, 'closeLeaderboard');
+  state.leaderboard = Object.assign({}, state.leaderboard, { status: 'error', rows: [], selfRank: null, message: '暂时无法读取排行，请稍后重试' });
+  ui.drawOverlay(state);
+  assert.equal(ui.hitTest(135, 408).action, 'retryLeaderboard');
+  state.leaderboard = Object.assign({}, state.leaderboard, { preview: true, status: 'ready', message: '预览演示 · 非真实排名' });
+  ui.drawOverlay(state);
+  assert.ok(values().includes('预览演示 · 非真实排名'));
+});
+
+test('native friend ranking is drawn only inside its reserved instrument panel', () => {
+  const { ui, images } = setup();
+  const shared = { width: 714, height: 700 };
+  const state = view('leaderboard', { mode: 'endless' });
+  state.leaderboard = { context: { mode: 'endless', version: 'endless-v1' }, scope: 'friends', friendEnabled: true,
+    status: 'ready', rows: [], message: '微信好友成绩 · 仅已授权的同玩好友' };
+  ui.drawOverlay(state, { rankingCanvas: shared });
+  assert.ok(images.some(args => args[0] === shared && args[1] === 20 && args[2] === 127));
+  assert.equal(ui.hitTest(135, 456).action, 'closeLeaderboard');
 });

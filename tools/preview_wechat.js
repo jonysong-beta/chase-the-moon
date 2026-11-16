@@ -116,7 +116,7 @@ function bindAdClose(id, ended) {
 }
 bindAdClose('ad-complete', true);
 bindAdClose('ad-cancel', false);
-start(wxMock, { rewardedAdUnitId: 'preview-only-not-for-publication', debug: true }).then(async app => {
+start(wxMock, { rewardedAdUnitId: 'preview-only-not-for-publication', debug: true, previewRanking: true }).then(async app => {
   await Promise.allSettled(fontLoads);
   window.__wechatPreview = { app, emit, wx: wxMock };
   status.textContent = '模拟环境已就绪';

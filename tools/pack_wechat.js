@@ -6,7 +6,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist', 'wechat');
-const modules = ['core', 'ui', 'input', 'platform', 'runtime', 'rewarded-ad', 'campaign', 'progression', 'daily', 'endless', 'challenge', 'share'];
+const modules = ['core', 'ui', 'input', 'platform', 'runtime', 'rewarded-ad', 'campaign', 'progression', 'daily', 'endless', 'challenge', 'share', 'leaderboard'];
 const sourceFiles = ['game.js', 'game.json', 'config.js'].concat(modules.map(name => 'src/' + name + '.js'));
 const assets = [
   'ui/cover-bg.webp', 'ui/cover-moon.webp', 'ui/menu.webp',
@@ -17,7 +17,8 @@ const assets = [
 ];
 const entries = sourceFiles.map(file => ({ source: 'minigame/' + file, target: file }))
   .concat(assets.map(file => ({ source: 'assets/' + file, target: 'assets/' + file })))
-  .concat([{ source: 'minigame/assets/ui/daily-scenes.webp', target: 'assets/ui/daily-scenes.webp' }]);
+  .concat([{ source: 'minigame/assets/ui/daily-scenes.webp', target: 'assets/ui/daily-scenes.webp' }])
+  .concat(['index.js', 'ranking.js'].map(file => ({ source: 'minigame/open-data/' + file, target: 'open-data/' + file })));
 
 // Validate the complete source list before touching an existing generated file.
 entries.forEach(entry => {
@@ -25,6 +26,13 @@ entries.forEach(entry => {
 });
 const config = require(path.join(root, 'minigame', 'config.js'));
 if (config.debug !== false) throw new Error('Deployable config.debug must be false');
+if (config.previewRanking !== false) throw new Error('Preview rankings must never enter the deployable game');
+if (config.worldRankingUrl && !/^https:\/\/[A-Za-z0-9.-]+(?::[0-9]+)?(?:\/[^\s?#@]*)?$/.test(config.worldRankingUrl)) {
+  throw new Error('worldRankingUrl must be an HTTPS endpoint without credentials');
+}
+const gameJson = JSON.parse(fs.readFileSync(path.join(root, 'minigame', 'game.json'), 'utf8'));
+if (gameJson.openDataContext !== 'open-data') throw new Error('game.json must keep the isolated friend-data context');
+if (config.friendRankingEnabled !== false && config.friendRankingEnabled !== true) throw new Error('friendRankingEnabled must be boolean');
 if (config.rewardedAdUnitId && !/^adunit-[a-zA-Z0-9]+$/.test(config.rewardedAdUnitId)) {
   throw new Error('Invalid rewardedAdUnitId; never package a preview ad ID');
 }

@@ -1887,6 +1887,28 @@ function createGame(options) {
     setState("play");
   }
 
+  function getLeaderboardContext() {
+    if (G.state === 'dailyBrief') {
+      const daily = v2View().daily;
+      if (!daily.unlocked) return null;
+      return { mode: 'daily', date: daily.date, pool: daily.pool, version: daily.version,
+        score: daily.bestScore || 0, bestScore: daily.bestScore, time: Daily.DURATION,
+        runId: '', abilities: Progression.abilities(Store.data), eligible: false, bestEligible: daily.bestCompleted === true };
+    }
+    if (G.state !== 'result' || !isV2() || !G.v2.result || !finalized || ['daily', 'endless'].indexOf(G.mode) < 0) return null;
+    const r = G.v2.result;
+    if (G.mode === 'daily') {
+      const key = r.date + '|' + r.pool + '|' + r.version, record = Store.data.dailyV2.records[key];
+      return { mode: 'daily', date: r.date, pool: r.pool, version: r.version, score: r.score,
+        bestScore: record && record.best ? record.best.score : r.score, time: r.time,
+        runId: r.runId, abilities: Object.assign({}, r.abilities), eligible: r.completed && !r.assisted,
+        bestEligible: !!(record && record.best && record.best.completed) };
+    }
+    return { mode: 'endless', date: r.date, pool: '', version: r.version, score: r.time,
+      bestScore: Store.data.endlessV2.best ? Store.data.endlessV2.best.time : r.time, time: r.time,
+      runId: r.runId, abilities: Object.assign({}, r.abilities), eligible: r.time > 0 && !r.assisted, bestEligible: true };
+  }
+
   function getShareContent() {
     if (G.state === 'meditation') return { mode: 'meditation', title: '星空冥想 · 在星际之间，停留片刻', query: 'view=meditation', score: null, subtitle: 'THE QUIET BETWEEN STARS' };
     if (G.state === 'dailyBrief') {
@@ -3619,7 +3641,7 @@ function createGame(options) {
         pools: [{ id: 'A', name: '近地', unlocked: Progression.dailyPoolUnlocked(data, 'A') },
           { id: 'B', name: '深空', unlocked: Progression.dailyPoolUnlocked(data, 'B') },
           { id: 'C', name: '暗潮', unlocked: Progression.dailyPoolUnlocked(data, 'C') }],
-        bestText: best ? String(best.score) + ' 分' : '尚无本机纪录', bestScore: best ? best.score : null, bestAbilitiesText: best ? abilityText(best.abilities) : abilityText(a),
+        bestText: best ? String(best.score) + ' 分' : '尚无本机纪录', bestScore: best ? best.score : null, bestCompleted: best ? best.completed === true : false, bestAbilitiesText: best ? abilityText(best.abilities) : abilityText(a),
         rating: best ? Daily.rating(best.score) : 'none', version: pool === 'C' ? Daily.RULE_VERSION_C : pool === 'B' ? Daily.RULE_VERSION_B : Daily.RULE_VERSION,
         historyText: Object.keys(data.dailyV2.records).some(k => k.startsWith(date + '|' + pool + '|') && k !== key) ? '另有旧规则纪录，分开保存' : '' },
       run: v ? { title: G.mode === 'endless' ? '无尽追寻' : G.mode === 'daily' ? '每日 ' + v.route.pool + ' · ' + (v.route.pool === 'C' ? '暗潮航行' : v.route.pool === 'B' ? '深空航行' : '近地航行') : v.levelId + ' · ' + v.level.name,
@@ -3792,7 +3814,7 @@ function createGame(options) {
   AudioEngine.enabled = Store.data.sound !== false;
   resetRun();
   setState('cover');
-  const api = { update, render, getView, setInput, pressJet, pressCapture, resetInput, pause, resume, action, getReviveOffer, completeRevive, declineRevive, drawShareCard, getShareContent };
+  const api = { update, render, getView, setInput, pressJet, pressCapture, resetInput, pause, resume, action, getReviveOffer, completeRevive, declineRevive, drawShareCard, getShareContent, getLeaderboardContext };
   if (options.debug === true) {
     api.debug = {
       state() { return JSON.parse(JSON.stringify(Object.assign({}, G, { input: Input, pending, finalized, assisted }))); },

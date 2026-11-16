@@ -566,6 +566,14 @@ V2 首版不包含付费内购、装备随机词条、体力限制、强制签�
 
 **分享实施约定（2026-11-17）：** 每日邀请只携带 `route/date/pool/version`；接受时重新计算当天同池版本，日期或版本不符不得混入今日航道，也不得因此解锁关卡。无尽与冥想分别使用 `view=endless`、`view=meditation`。成绩海报保持 540×860，另从真实海报生成 500×400 的微信转发缩略图；导出失败按官方文档回退为游戏画面。调用 `wx.shareAppMessage` 只表示拉起转发，不宣称玩家已经分享成功，也不发放分享奖励。启动与前台参数只在封面/工作台接收，不能用旧分享打断正在进行的游戏。接口依据：[主动转发](https://developers.weixin.qq.com/minigame/dev/api/share/wx.shareAppMessage.html)、[Canvas 导出](https://developers.weixin.qq.com/minigame/dev/api/render/canvas/Canvas.toTempFilePath.html)、[启动参数](https://developers.weixin.qq.com/minigame/dev/api/base/app/life-cycle/wx.getLaunchOptionsSync.html)。
 
+**排行实施约定（2026-11-17）：** 每日按 `date + pool + version` 分榜，数值为完整 150 秒航行的得分；无尽按玩法版本分榜，数值为生存毫秒。两者直接携带永久能力，不另设标准榜。主线、冥想、未保存、续玩中及主动退出的成绩不进入这两类排行。
+
+世界榜通过 `worldRankingUrl` 指定的 HTTPS 端点适配：`POST` 提交 `runId/mode/date/pool/version/score或timeMs/time/abilities`，成功响应 `{accepted:true}`；`GET` 以相同航线参数请求最多 7 条 `{rank,name,value}` 和可选 `selfRank`。客户端校验所有响应，不把本机名次补成世界名次。服务端必须验证玩家身份、规则版本、成绩与 `runId` 幂等性；客户端提交本身不是反作弊证明。正式域名还需按微信要求配置，密钥不得放入小游戏包。接口依据：[wx.request](https://developers.weixin.qq.com/minigame/dev/api/network/request/wx.request.html)。
+
+好友榜只在用户点击后请求 `scope.WxFriendInteraction`；主域写入版本化 KV 键，开放数据域读取、校验、排序并绘制昵称和成绩，不把好友资料带回主域。每日只同步完整航行的本机最佳，无尽使用整数毫秒；授权拒绝不影响本机纪录。正式实现依据：[开放数据域](https://developers.weixin.qq.com/minigame/dev/guide/open-ability/opendata/basic.html)、[好友托管数据](https://developers.weixin.qq.com/minigame/dev/api/open-api/data/wx.getFriendCloudStorage.html)、[写入托管数据](https://developers.weixin.qq.com/minigame/dev/api/open-api/data/wx.setUserCloudStorage.html)、[授权](https://developers.weixin.qq.com/minigame/dev/api/open-api/authorize/wx.authorize.html)。
+
+生产默认 `worldRankingUrl:''`、`friendRankingEnabled:false`、`previewRanking:false`，不显示排行入口、不发起请求或授权。预览榜仅在 `debug:true` 且 `previewRanking:true` 时开启，并显著标注“预览演示 · 非真实排名”；打包器拒绝生产预览榜。正式服务端、账号权限与真机好友链尚未配置，不把适配器通过称为真实排行上线。
+
 ### F4. 统一美术核心
 
 用户确认当前产品的视觉核心是：**宇宙航行、航线、工作台、复古未来风格的画面**。类别身份证继续使用“太空时代印刷海报 × 竖屏纵深街机”，其中“复古未来”是明确的视觉语言，不再只停留在族谱描述。

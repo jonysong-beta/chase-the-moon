@@ -7,6 +7,7 @@ const { SHARE_CARD_RECT } = require('./ui');
 const { createInput } = require('./input');
 const createRewardedAd = require('./rewarded-ad');
 const { createSharing } = require('./share');
+const { createLeaderboard } = require('./leaderboard');
 
 async function start(wx, config) {
   config = config || {};
@@ -17,6 +18,7 @@ async function start(wx, config) {
   let frameHandle = null;
   let lastTime = null;
   let lastScreen = null;
+  let lastGameScreen = null, leaderboardOpen = false;
   let adSequence = 0;
   let adBusy = false;
   let adMessage = '';
@@ -42,6 +44,18 @@ async function start(wx, config) {
     now: Date.now, reviveEnabled: ads.isConfigured(), debug: config.debug === true
   });
   const sharing = createSharing({ wx, createCanvas: platform.createCanvas, fonts: platform.fonts });
+  const leaderboard = createLeaderboard({ wx, worldUrl: config.worldRankingUrl,
+    friendEnabled: config.friendRankingEnabled === true, preview: config.debug === true && config.previewRanking === true });
+  async function openLeaderboard() {
+    if (destroyed || !leaderboard.available) return false;
+    const context = game.getLeaderboardContext();
+    if (!context) return false;
+    leaderboardOpen = true; lastGameScreen = game.getView().screen; resetInput(); resetFrameTime();
+    const state = await leaderboard.show(context);
+    if (destroyed) return false;
+    if (state.status === 'idle' && state.scope === 'friends') return leaderboard.selectScope('friends');
+    return state;
+  }
   function receiveLaunch(query) {
     if (destroyed || ['title', 'cover'].indexOf(game.getView().screen) < 0 || !query) return false;
     return game.action('receiveShare', query);
@@ -93,6 +107,13 @@ async function start(wx, config) {
     if (destroyed) return false;
     if (ui && ui.handleAction(name, payload)) return true;
     if (name === 'shareCurrent') return shareCurrent();
+    if (name === 'openLeaderboard') return openLeaderboard();
+    if (name === 'closeLeaderboard' && leaderboardOpen) { leaderboardOpen = false; resetInput(); resetFrameTime(); return true; }
+    if (leaderboardOpen) {
+      if (name === 'selectLeaderboardScope') return leaderboard.selectScope(payload);
+      if (name === 'retryLeaderboard') return leaderboard.getState().scope === 'friends' ? leaderboard.selectScope('friends') : leaderboard.show(game.getLeaderboardContext());
+      return false;
+    }
     if (name === 'watchAd') return watchAd(payload);
     const offer = game.getReviveOffer();
     if (offer.eligible && (name === 'declineRevive' || name === 'retry' || name === 'home')) {
@@ -129,7 +150,16 @@ async function start(wx, config) {
   }
   const removeResize = platform.onResize(() => { resetInput(); resetFrameTime(); });
   function draw(dt) {
-    const view = game.getView();
+    let view = game.getView();
+    if (view.screen !== lastGameScreen) {
+      lastGameScreen = view.screen; leaderboardOpen = false;
+      if (view.screen === 'result' && leaderboard.available) {
+        const context = game.getLeaderboardContext();
+        if (context && context.eligible) leaderboard.publish(context);
+      }
+    }
+    const rankingContext = leaderboard.available ? game.getLeaderboardContext() : null;
+    if (leaderboardOpen) view = Object.assign({}, view, { screen: 'leaderboard', leaderboard: leaderboard.getState() });
     if (view.screen !== lastScreen) { resetInput(); lastScreen = view.screen; }
     platform.beginFrame();
     try {
@@ -144,7 +174,8 @@ async function start(wx, config) {
         platform.ctx.restore();
       }
       ui.drawOverlay(view, { stick: input.getStick(), adBusy, adMessage,
-        shareAvailable: sharing.available, shareMessage: sharing.getState().message });
+        shareAvailable: sharing.available, shareMessage: sharing.getState().message,
+        rankingAvailable: !!rankingContext, rankingCanvas: leaderboard.getCanvas() });
     } finally { platform.endFrame(); }
   }
   function frame(timestamp) {
@@ -157,8 +188,8 @@ async function start(wx, config) {
   }
   function destroy() {
     if (destroyed) return;
-    destroyed = true; adSequence++;
-    ads.destroy(); adBusy = false; adMessage = '';
+    destroyed = true; adSequence++; leaderboardOpen = false;
+    ads.destroy(); leaderboard.destroy(); adBusy = false; adMessage = '';
     resetInput(); game.pause('destroy');
     platform.cancelFrame(frameHandle); frameHandle = null;
     bindings.forEach(binding => {
@@ -172,7 +203,7 @@ async function start(wx, config) {
   return {
     game, ui, input, platform, handleAction,
     getAdState() { return { busy: adBusy, message: adMessage, configured: ads.isConfigured(), events: events.map(entry => Object.assign({}, entry)) }; },
-    getSocialState() { return { share: sharing.getState(), available: sharing.available }; },
+    getSocialState() { return { share: sharing.getState(), available: sharing.available, ranking: leaderboard.getState() }; },
     destroy
   };
 }

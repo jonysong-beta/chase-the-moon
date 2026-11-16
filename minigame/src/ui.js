@@ -136,7 +136,7 @@ function createUI(options) {
     } else if (view.screen === 'menu' || (view.screen === 'title' && !view.v2) || view.screen === 'classic') {
       rect(0, 0, W, H, COLOR.navy);
       fitImage(assets.menu);
-    } else if (['map', 'growth', 'dailyBrief', 'meditation', 'storageError'].indexOf(view.screen) !== -1 ||
+    } else if (['map', 'growth', 'dailyBrief', 'meditation', 'leaderboard', 'storageError'].indexOf(view.screen) !== -1 ||
         (view.screen === 'title' && view.v2) ||
         (view.screen === 'result' && view.v2 && view.v2.mode !== 'classic')) {
       rect(0, 0, W, H, '#0E1C2C');
@@ -445,9 +445,12 @@ function createUI(options) {
       text((daily.remainingRewards || 0) > 0 ? '今日可获成长 ' + daily.remainingRewards + ' 点' : '今日成长奖励已领取',
         16, 371 + offset, 7.2, COLOR.dim);
     } else text('完成 L04 · 第一脉冲后开放', 16, 352 + offset, 9.2, COLOR.bright);
-    if (daily.unlocked && overlay.shareAvailable) button('邀请好友 · 同一条航线', 'shareCurrent', 20, 382, 230, 27, { size: 9 });
+    if (daily.unlocked && overlay.shareAvailable) {
+      button('邀请好友 · 同一航线', 'shareCurrent', 20, 397, overlay.rankingAvailable ? 143 : 230, 26, { size: 9 });
+      if (overlay.rankingAvailable) button('航道排行', 'openLeaderboard', 171, 397, 79, 26, { size: 8.5 });
+    } else if (daily.unlocked && overlay.rankingAvailable) button('查看航道排行', 'openLeaderboard', 20, 397, 230, 26, { size: 9 });
     button(daily.unlocked ? (bestScore === null ? '开始每日航线' : '再次航行') : '尚未开放',
-      'startDaily', 20, 420, 230, 40, { primary: true, size: 12, disabled: !daily.unlocked });
+      'startDaily', 20, 434, 230, 32, { primary: true, size: 12, disabled: !daily.unlocked });
   }
   function drawMeditation(view, overlay) {
     const m = view.meditation || { duration: 300, elapsed: 0, remaining: 300, running: false, completed: false, visualTime: 0 };
@@ -659,7 +662,7 @@ function createUI(options) {
     button('本机榜单', 'openBoard', 22, 430, 108, 32, { size: 9 });
     button('回任务面板', 'home', 140, 430, 108, 32, { size: 9 });
   }
-  function drawV2Result(view) {
+  function drawV2Result(view, overlay) {
     const result = view.v2.result || {};
     const rows = Array.isArray(result.rows) ? result.rows : [];
     const awaitingSave = !!(result.savePending || result.saveError);
@@ -687,9 +690,55 @@ function createUI(options) {
       result.saveError ? 'retrySave' : 'retry', 20, 358, 230, 36,
       { primary: true, size: 12, disabled: !!result.savePending && !result.saveError });
     button('成绩卡分享', 'openCard', 20, 402, 110, 34, { size: 11, disabled: awaitingSave });
-    button('能力成长', 'openGrowth', 140, 402, 110, 34, { size: 11, disabled: awaitingSave });
+    button(overlay.rankingAvailable && (result.kind === 'daily' || endless) ? '航道排行' : '能力成长',
+      overlay.rankingAvailable && (result.kind === 'daily' || endless) ? 'openLeaderboard' : 'openGrowth',
+      140, 402, 110, 34, { size: 11, disabled: awaitingSave });
     button('回任务台', 'backToHub', 20, 446, 230, 34, { size: 11, disabled: awaitingSave });
   }
+  function drawLeaderboard(view, overlay) {
+    const board = view.leaderboard || {}, route = board.context || {};
+    const friend = board.scope === 'friends';
+    text('← 返回', 16, 21, 8, COLOR.dim, 'left', 'body');
+    touchRegion('closeLeaderboard', null, 8, 5, 74, 30);
+    text('FLIGHT REGISTER / SOL III', 254, 21, 5.6, COLOR.gold, 'right');
+    text('航道记录', 135, 51, 23, COLOR.cream, 'center', 'title', '700');
+    text(route.mode === 'endless' ? '无尽追寻 · 生存时间' : (route.date || '') + ' · ' + (route.pool || 'A') + ' 池',
+      135, 74, 8.5, COLOR.dim, 'center', 'body');
+    const worldEnabled = board.worldEnabled || board.preview, friendEnabled = board.friendEnabled || board.preview;
+    if (worldEnabled && friendEnabled) {
+      button('世界航线', 'selectLeaderboardScope', 20, 88, 110, 28, { primary: !friend, payload: 'world', size: 9 });
+      button('同航好友', 'selectLeaderboardScope', 140, 88, 110, 28, { primary: friend, payload: 'friends', size: 9 });
+    } else text(friend ? 'AUTHORIZED FRIENDS' : 'WORLD FLIGHT LOG', 135, 101, 7, COLOR.gold, 'center');
+    if (board.preview) text('预览演示 · 非真实排名', 135, 122, 7.6, COLOR.bright, 'center', 'body');
+    const nativeFriend = friend && board.status === 'ready' && overlay.rankingCanvas && !board.preview;
+    if (nativeFriend) {
+      rect(20, 127, 230, 225, COLOR.navy, COLOR.gold, .7);
+      ctx.drawImage(overlay.rankingCanvas, 20, 127, 230, 225);
+    } else {
+      rect(20, 132, 230, 231, 'rgba(10,20,32,.35)', 'rgba(212,168,75,.4)', .7);
+      const rows = Array.isArray(board.rows) ? board.rows.slice(0, 7) : [];
+      rows.forEach((entry, index) => {
+        const y = 150 + index * 29;
+        text(String(entry.rank).padStart(2, '0'), 29, y, 9, index === 0 ? COLOR.bright : COLOR.dim);
+        text(entry.name, 58, y, 9.2, index === 0 ? COLOR.bright : COLOR.cream, 'left', 'body', '400', 124);
+        const metric = route.mode === 'endless' ? Math.floor(entry.value / 60000) + ':' + String(Math.floor(entry.value / 1000) % 60).padStart(2, '0') : String(entry.value);
+        text(metric, 241, y, 11, COLOR.bright, 'right', 'mono', '700', 63);
+        line(28, y + 13, 242, y + 13, 'rgba(197,184,154,.16)', .5);
+      });
+      if (!rows.length) {
+        circle(135, 201, 30, null, 'rgba(212,168,75,.26)', .7);
+        circle(135, 201, 19, null, 'rgba(212,168,75,.18)', .5);
+        line(112, 201, 158, 201, 'rgba(212,168,75,.35)', .5);
+        lines(board.message || '正在读取航道记录', 135, 260, 208, 10, COLOR.dim, 15, 'center', 'body', 3);
+      }
+    }
+    if (rowsWithData(board) && board.selfRank) text('你的服务端名次  #' + board.selfRank, 135, 381, 9.5, COLOR.bright, 'center', 'body');
+    const note = board.preview ? '示意数据 · 不会上传成绩' : nativeFriend ? '好友数据由微信开放数据域绘制' : board.scope === 'world' ? '同日同池同规则 · 永久成长直接计入' : board.message;
+    if (board.status === 'error' || board.status === 'unavailable') button('重新读取', 'retryLeaderboard', 65, 393, 140, 30, { size: 9 });
+    else lines(note || '本机纪录始终保留', 135, nativeFriend ? 375 : 395, 226, 8, COLOR.dim, 12, 'center', 'body', 2);
+    button('返回航行', 'closeLeaderboard', 20, 440, 230, 32, { primary: true, size: 11 });
+  }
+  function rowsWithData(board) { return board.status === 'ready' && Array.isArray(board.rows) && board.rows.length > 0; }
   function drawBoard(view) {
     const board = view.board;
     if (!board || !Array.isArray(board.entries)) throw new TypeError('board.entries must be an array');
@@ -760,8 +809,9 @@ function createUI(options) {
     else if (view.screen === 'growth') drawGrowth(view);
     else if (view.screen === 'dailyBrief') drawDaily(view, overlay);
     else if (view.screen === 'meditation') drawMeditation(view, overlay);
+    else if (view.screen === 'leaderboard') drawLeaderboard(view, overlay);
     else if (view.screen === 'grant') drawGrant(view);
-    else if (view.screen === 'result') { if (expanded) drawV2Result(view); else drawResult(view); }
+    else if (view.screen === 'result') { if (expanded) drawV2Result(view, overlay); else drawResult(view); }
     else if (view.screen === 'board') drawBoard(view);
     else if (view.screen === 'card') drawCard(view, overlay);
     else {
