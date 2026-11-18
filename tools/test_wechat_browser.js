@@ -210,8 +210,11 @@ const server = http.createServer((request, response) => {
     await page.reload(); await page.waitForFunction(() => window.__wechatPreview, { timeout: 20000 });
     await clickAction('openMenu'); await waitScreen('title');
     assert.equal((await state()).v2.growth.abilities[0].level, 2);
-    assert.equal((await state()).v2.hub.complete, true);
-    await clickAction('openCampaign'); await waitScreen('map'); await keyShot('v2-map-complete');
+    const hubAfterL04 = (await state()).v2.hub;
+    assert.equal(hubAfterL04.complete, false, 'L04 opens chapter two, not full-campaign completion');
+    assert.equal(hubAfterL04.nextId, 'L05');
+    assert.equal(hubAfterL04.completedCount, 4);
+    await clickAction('openCampaign'); await waitScreen('map'); await keyShot('v2-map-after-l04');
     for (const size of [{ width: 360, height: 740 }, { width: 390, height: 790 }, { width: 430, height: 932 }, { width: 1024, height: 768 }]) {
       await page.setViewportSize(size); await settle();
       const viewport = await page.evaluate(() => window.__wechatPreview.app.platform.getViewport());

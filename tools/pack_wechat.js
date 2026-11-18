@@ -12,8 +12,8 @@ const assets = [
   'ui/cover-bg.webp', 'ui/cover-moon.webp', 'ui/menu.webp',
   'sprites/moon.webp', 'sprites/moon-dark.webp', 'sprites/earth.webp',
   'sprites/well.webp', 'sprites/rock.webp', 'sprites/signal.webp',
-  'fonts/GeistMono.woff2', 'fonts/NotoSerifSC-700-sub.woff2',
-  'fonts/Limelight.woff2', 'fonts/JosefinSans-300.woff2'
+  'fonts/GeistMono.ttf', 'fonts/NotoSerifSC-700-sub.ttf',
+  'fonts/Limelight.ttf', 'fonts/JosefinSans-300.ttf'
 ];
 const entries = sourceFiles.map(file => ({ source: 'minigame/' + file, target: file }))
   .concat(assets.map(file => ({ source: 'assets/' + file, target: 'assets/' + file })))

@@ -100,6 +100,7 @@ test('platform maps a DPR-capped safe/capsule viewport and keeps letterbox outsi
   assert.ok(fake.images.includes('assets/ui/daily-scenes.webp'));
   assert.ok(fake.images.every(path => !path.includes('?')));
   assert.equal(fake.fontPaths.length, 4);
+  assert.ok(fake.fontPaths.every(path => path.endsWith('.ttf')), 'WeChat loadFont whitelist requires TTF assets');
   assert.equal(platform.fonts.mono, '"local-font-1"');
   platform.beginFrame(); platform.endFrame();
   assert.ok(fake.canvases[0].operations.some(operation => operation.name === 'clip'));

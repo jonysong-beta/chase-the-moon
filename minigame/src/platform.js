@@ -11,8 +11,8 @@ const IMAGE_PATHS = Object.freeze({
   dailyScenes: 'assets/ui/daily-scenes.webp'
 });
 const FONT_PATHS = Object.freeze({
-  mono: 'assets/fonts/GeistMono.woff2', title: 'assets/fonts/NotoSerifSC-700-sub.woff2',
-  display: 'assets/fonts/Limelight.woff2', body: 'assets/fonts/JosefinSans-300.woff2'
+  mono: 'assets/fonts/GeistMono.ttf', title: 'assets/fonts/NotoSerifSC-700-sub.ttf',
+  display: 'assets/fonts/Limelight.ttf', body: 'assets/fonts/JosefinSans-300.ttf'
 });
 
 function createPlatform(wx) {
